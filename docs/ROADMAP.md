@@ -51,9 +51,12 @@ M0 ─┬─► M1 ─► M2 ─┬─► M3 ─┐
 
 ### 0.3 진행 원칙
 
+- **저장소는 3개다** — 루트(문서) · `todo-backend` · `todo-frontend`. 커밋은 **변경이 일어난 저장소에서** 한다 (Task 004).
 - 각 마일스톤 완료 시 **Git 커밋 + 태그**(`m0-init`, `m1-domain` …)로 이력을 남긴다 (부록 B).
+  - 태그는 **그 마일스톤에서 실제 변경이 있었던 저장소마다** 붙인다. 예: M1(백엔드 전용) → `todo-backend`에만 `m1-domain`. M0(공통) → 세 저장소 모두.
 - 마일스톤은 **DoD(완료 기준)를 모두 충족**해야 다음으로 넘어간다.
 - 브랜치 전략: `main`(안정) ← `develop`(통합) ← `feature/*`(Task 단위 작업 브랜치).
+  - **문서 저장소는 `main` 단일 브랜치**로 운영한다 (통합·안정화할 빌드가 없음).
 - **각 Task 완료 후 해당 테스트를 실행해 통과를 확인하고, 다음 Task로 넘어가기 전에 중단하고 지시를 기다린다.**
 - 작업 완료 시 항상 백엔드 `./mvnw test`, 프론트엔드 `npm run lint` + `npm run build`가 통과해야 한다 (CLAUDE.md 2장).
 
@@ -108,7 +111,9 @@ M0 ─┬─► M1 ─► M2 ─┬─► M3 ─┐
 | `src/test/resources/application.properties` (테스트 전용 더미) | ✅ 완료 |
 | 루트 `.gitignore` | ✅ 완료 |
 | `./mvnw test` 통과 | ✅ 확인됨 (단, JDK 21 명시 필요) |
-| **Git 저장소 초기화** | ❌ **미실행** (`.git` 없음, `main`/`develop` 브랜치 없음) |
+| **Git 저장소 구성** | ✅ **3-저장소 구성 완료** — 루트(문서, `main`) · `todo-backend`(`main`+`develop`, 커밋 3) · `todo-frontend`(`main`+`develop`, 커밋 3) |
+| 루트용 GitHub 저장소 | ❌ **미생성** — `gh` CLI 없어 웹에서 직접 생성 필요 |
+| 세 저장소 push | ❌ 미실행 |
 | **`JAVA_HOME`** | ⚠️ `zulu17`을 가리킴 → **JDK 21(`C:\Program Files\Java\jdk-21.0.11`) 전환 필요** |
 | 루트 `README.md` | ❌ 없음 |
 | PostgreSQL `TodoListDB` 스키마 물리명 확인 | ⚠️ 미확인 (`\dn` 실측 필요) |
@@ -158,17 +163,34 @@ M0 ─┬─► M1 ─► M2 ─┬─► M3 ─┐
 - [ ] `./mvnw -v`가 Java 21을 사용하는지 확인
 - [ ] 전환 후 `./mvnw clean test` 재실행 — 17로 되돌아가면 `release version 21 not supported`로 컴파일 자체가 실패한다
 
-### Task 004: Git 저장소 초기화 및 브랜치 전략 적용 🔥 우선순위
+### Task 004: Git 저장소 구성 및 초기 커밋 ✅ 완료
 
 **영역**: 공통 | **선행**: Task 001
 
-**아직 `git init`이 실행되지 않았다.** 진행 원칙(0.3)의 마일스톤 태그·브랜치 전략이 전부 이 Task에 의존한다.
+**이 프로젝트는 모노레포가 아니라 세 개의 독립 저장소로 관리한다.** 백엔드·프론트엔드의 GitHub 저장소가 애초에 분리되어 있어, 루트를 문서 전용 저장소로 두는 구성을 택했다.
 
-- [ ] 루트에서 `git init` (모노레포 단일 저장소)
-- [ ] `.gitignore` 적용 상태 확인 — `git status`에 `node_modules/`, `target/`, `.env*`가 나타나지 않아야 한다
-- [ ] **커밋 전 시크릿 스캔** — `application*.properties`에 평문 값이 없는지 최종 확인 (불변 규칙 9)
-- [ ] 초기 커밋 후 `main` → `develop` 브랜치 생성
-- [ ] (선택) GitHub 원격 저장소 연결 및 `develop` 푸시
+| 저장소 | 담당 | GitHub | 브랜치 |
+|--------|------|--------|--------|
+| 루트 `todo-project/` | `docs/` · `CLAUDE.md` · `.claude/` | (신규 생성 필요) | `main` |
+| `todo-backend/` | 백엔드 코드 | `kdongjin/todo-backend` | `main` + `develop` |
+| `todo-frontend/` | 프론트 코드 | `kdongjin/todo-frontend` | `main` + `develop` |
+
+> ⚠️ **루트 `.gitignore`에서 하위 두 폴더를 반드시 제외한다.** 제외하지 않으면 git이 이들을 **embedded repository**로 인식해 내용 대신 커밋 해시만 기록하고(gitlink), clone 시 빈 디렉토리로 나온다.
+> **문서 저장소는 `develop`을 두지 않는다** — 통합·안정화할 빌드가 없어 순수 오버헤드다.
+
+- [x] 루트 `.gitignore`에 `todo-backend/`·`todo-frontend/`·`.metadata/` 제외 추가
+- [x] `todo-backend`: `.gitignore`에 시크릿 규칙 보강 → `main` 브랜치 → **커밋 3개** → `develop` 생성
+  - `chore: Spring Boot 4 프로젝트 골격 추가`
+  - `chore: 설정 파일 프로파일 분리 및 시크릿 환경변수화`
+  - `test: 테스트 전용 설정 및 스키마 분리`
+- [x] `todo-frontend`: **커밋 2개** → `develop` 생성
+  - `chore: shadcn/ui 초기화 및 디자인 토큰 설정`
+  - `chore: VS Code Tailwind 4 린트 설정 추가`
+- [x] 루트: `git init` → `main` → **커밋 1개** (`docs: PRD·ROADMAP·API_SPEC 및 프로젝트 지침 추가`)
+- [x] **커밋 전 시크릿 스캔** — 세 저장소 모두 평문 시크릿 0건 확인 (불변 규칙 9)
+- [x] embedded repository 경고 없음 확인
+- [ ] **루트용 GitHub 저장소 생성** (사용자 작업 — `gh` CLI 미설치)
+- [ ] 세 저장소 push — 코드 저장소는 `main`·`develop` 둘 다
 
 ### Task 005: PostgreSQL `TodoListDB` 스키마 준비 및 연결 검증 🔥 우선순위
 

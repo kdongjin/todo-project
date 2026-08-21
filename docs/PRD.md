@@ -64,9 +64,20 @@
 
 ---
 
-## 2. 프로젝트 구조 (Monorepo)
+## 2. 프로젝트 구조
 
 한 폴더(`todo-project/`) 안에 백엔드와 프론트엔드를 분리하여 관리한다.
+
+> ⚠️ **디렉토리는 한곳에 모여 있지만, Git 저장소는 3개로 분리되어 있다.**
+>
+> | 저장소 | 담당 | GitHub |
+> |--------|------|--------|
+> | 루트 `todo-project/` | `docs/` · `CLAUDE.md` · `.claude/` | 문서 전용 저장소 |
+> | `todo-backend/` | 백엔드 코드 | `kdongjin/todo-backend` |
+> | `todo-frontend/` | 프론트 코드 | `kdongjin/todo-frontend` |
+>
+> 루트 `.gitignore`가 하위 두 폴더를 제외하므로 세 저장소는 서로 간섭하지 않는다.
+> **커밋은 변경이 일어난 저장소에서** 한다. 상세는 [ROADMAP.md](./ROADMAP.md) Task 004 참조.
 
 ```
 todo-project/

@@ -68,8 +68,22 @@ npx shadcn@latest add <component>   # shadcn/ui 컴포넌트 추가
 
 ### 공통
 - 새 파일/기능은 [PRD.md](./docs/PRD.md)의 디렉토리 구조를 따른다.
-- 커밋은 마일스톤/기능 단위로 작게. 커밋 메시지는 `type: subject` (예: `feat: add todo pagination`).
+- 커밋은 마일스톤/기능 단위로 작게. 커밋 메시지는 **한국어**, 형식은 `type: subject` (예: `feat: Todo 목록 페이지네이션 추가`).
 - 브랜치: `main` ← `develop` ← `feature/*`.
+
+#### ⚠️ 이 프로젝트는 Git 저장소가 3개다
+
+디렉토리는 한곳에 모여 있지만 저장소는 분리되어 있다. **변경한 파일이 속한 저장소에서 커밋한다.**
+
+| 변경 대상 | 커밋 위치 | 브랜치 |
+|-----------|-----------|--------|
+| `docs/` · `CLAUDE.md` · `.claude/` | **루트** `todo-project/` | `main` 단일 |
+| 백엔드 코드 | `todo-backend/` | `main` + `develop` |
+| 프론트 코드 | `todo-frontend/` | `main` + `develop` |
+
+- 루트 `.gitignore`가 `todo-backend/`·`todo-frontend/`를 제외한다. **이 규칙을 지우지 않는다** — 지우면 git이 두 폴더를 embedded repository로 기록해 clone 시 빈 디렉토리가 된다.
+- 한 작업이 코드와 문서를 동시에 건드리면 **저장소별로 나눠 커밋**한다.
+- 마일스톤 태그는 **실제 변경이 있었던 저장소에만** 붙인다.
 
 ### Backend
 - **레이어**: Controller → Service → Repository. Controller에 비즈니스 로직 금지.
