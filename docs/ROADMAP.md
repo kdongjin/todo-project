@@ -239,7 +239,7 @@ M0 ─┬─► M1 ─► M2 ─┬─► M3 ─┐
 
 **목표**: 테스트 인프라·엔티티·공통 응답·예외·Soft Delete 기반을 마련하고, **PRD가 M1 실측으로 미룬 기술 불확실성 2건을 확정**한다.
 
-### Task 007: 백엔드 테스트 인프라 구축 🔥 우선순위
+### Task 007: 백엔드 테스트 인프라 구축 ✅ 완료
 
 **영역**: BE | **선행**: Task 003, 005
 
@@ -250,14 +250,15 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 - [x] ~~테스트 properties에 스키마 분리 반영~~ — ✅ **완료** (`src/test/resources/application.properties`)
   - `DB_URL`을 상속하지 않고 `currentSchema=todolistdb_test` 직접 지정, `hbm2ddl.create_namespaces=true` 설정
   - ⚠️ 테스트 properties는 main을 shadow하므로 **필요한 설정을 전부 자립적으로** 적는다 (Kakao `provider`/`registration` 블록 포함)
-- [ ] **`todolistdb_test` 스키마가 실제로 생성되는지 확인** — 현재는 엔티티가 없어 미검증 상태다
-  - 자동 생성이 안 되면 Task 005의 수동 `CREATE SCHEMA`로 처리
-- [ ] 테스트 베이스 클래스 마련 — `@SpringBootTest` + `@AutoConfigureMockMvc` 공통 설정, 테스트 간 데이터 격리(`@Transactional` 또는 정리 전략)
-- [ ] 패키지 구조 확정: `src/test/java/com/example/{domain, auth, todo}` — 프로덕션 패키지와 대칭
+- [x] **`todolistdb_test` 스키마가 실제로 생성되는지 확인** — 실측: Hikari 연결 로그에 `Default catalog/schema: postgres/todolistdb_test` 확인됨 (스키마는 Task 005에서 수동 생성됨)
+- [x] 테스트 베이스 클래스 마련 — `com.example.support.IntegrationTestSupport` (`@SpringBootTest` + `@AutoConfigureMockMvc` + `@Transactional`)
+  - ⚠️ Spring Boot 4에서 `AutoConfigureMockMvc`의 패키지가 `org.springframework.boot.webmvc.test.autoconfigure`로 변경됨 (기존 `org.springframework.boot.test.autoconfigure.web.servlet`는 존재하지 않음)
+  - 데이터 격리는 `@Transactional` 롤백 방식 채택 — 테스트 메서드 종료 시 자동 롤백
+- [x] 패키지 구조 확정: 도메인 엔티티가 아직 없어(Task 008·009 예정) `domain`/`auth`/`todo` 하위 패키지는 실제 코드 추가 시점에 생성한다. 공통 테스트 인프라는 `com.example.support`에 둔다
 
 **테스트 체크리스트 (JUnit 5 + Spring Boot Test)**
-- [ ] 기존 `TodoBackendApplicationTests.contextLoads()`가 새 전략에서 통과
-- [ ] 테스트 두 개를 연속 실행해도 데이터가 서로 오염되지 않음
+- [x] 기존 `TodoBackendApplicationTests.contextLoads()`가 새 전략에서 통과
+- [x] 테스트 두 개를 연속 실행해도 데이터가 서로 오염되지 않음 — `com.example.support.TestIsolationVerificationTest`로 scratch 테이블 insert/count 검증(`@Transactional` 롤백으로 두 번째 테스트가 첫 번째 테스트의 행을 보지 못함, 테이블 자체도 DDL 롤백으로 남지 않음을 확인)
 
 ### Task 008: BaseEntity·JPA Auditing 및 Soft Delete 기반 구축
 
@@ -469,22 +470,24 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 **영역**: BE | **선행**: Task 013
 
-- [ ] `todo/TodoController.java` + `todo/dto/`(`TodoCreateRequest`, `TodoUpdateRequest`, `TodoResponse`), `domain/todo/TodoService.java`
+- [x] `todo/TodoController.java` + `todo/dto/`(`TodoCreateRequest`, `TodoUpdateRequest`, `TodoResponse`), `domain/todo/TodoService.java`
   - 📌 `com.example.domain.todo`(엔티티·서비스)와 `com.example.todo`(컨트롤러·DTO)가 나뉘어 있어 혼동하기 쉽다. 파일 생성 시 PRD 2.1 구조를 그대로 따른다
-- [ ] `POST /api/todos` (201) — `title` `@NotBlank @Size(max=255)`, `content`(JSONB, 선택), `dueDate`(선택)
-- [ ] `GET /api/todos/{id}` (200) — **`findByIdAndUser_IdAndDeletedAtIsNull`** 로 소유권 + Soft Delete 동시 처리 (PRD 8.3)
-- [ ] `PUT /api/todos/{id}` (200) — **`title`·`status`는 필수**(`@NotBlank`/`@NotNull`), `content`·`dueDate`만 생략 시 `null`로 갱신 (API_SPEC 4.5)
+- [x] `POST /api/todos` (201) — `title` `@NotBlank @Size(max=255)`, `content`(JSONB, 선택), `dueDate`(선택)
+- [x] `GET /api/todos/{id}` (200) — **`findByIdAndUser_IdAndDeletedAtIsNull`** 로 소유권 + Soft Delete 동시 처리 (PRD 8.3)
+- [x] `PUT /api/todos/{id}` (200) — **`title`·`status`는 필수**(`@NotBlank`/`@NotNull`), `content`·`dueDate`만 생략 시 `null`로 갱신 (API_SPEC 4.5)
   - ⚠️ `status`를 선택으로 두면 `NOT NULL` 제약 위반(500) 경로가 열린다
-- [ ] `TodoResponse.content`는 저장된 JSON 문자열을 **JSON 객체 그대로** 직렬화한다 (API_SPEC 4.1). 프론트는 파싱 없이 Tiptap에 전달한다
-- [ ] **소유권 위반·미존재는 모두 `404` + `TODO_001`** (불변 규칙 11 — 403은 타인 리소스 존재 여부를 노출한다)
-- [ ] (선택) `content` 요청 바디 크기 상한 검토 — JSONB는 사실상 무제한이다 (PRD_VALIDATION Minor #3)
+  - 📌 구현 시 이 프로젝트가 Jackson 3(`tools.jackson.databind.*`)임을 확인해 `content` 요청 필드는 `JsonNode`로 받는다(`String`으로 받으면 JSON 객체 바인딩 시 매핑 예외). 응답 직렬화는 `com.fasterxml.jackson.annotation.JsonRawValue`(Jackson 3에서도 유지되는 패키지) 사용
+  - 📌 `status`는 요청 DTO에서 `String @NotBlank`로 받고 서비스에서 `TodoStatus.valueOf` 실패 시 `TODO_002`로 매핑(enum 타입으로 받으면 역직렬화 실패가 `GlobalExceptionHandler` 미처리 500으로 샌다)
+- [x] `TodoResponse.content`는 저장된 JSON 문자열을 **JSON 객체 그대로** 직렬화한다 (API_SPEC 4.1). 프론트는 파싱 없이 Tiptap에 전달한다
+- [x] **소유권 위반·미존재는 모두 `404` + `TODO_001`** (불변 규칙 11 — 403은 타인 리소스 존재 여부를 노출한다)
+- [ ] (선택) `content` 요청 바디 크기 상한 검토 — JSONB는 사실상 무제한이다 (PRD_VALIDATION Minor #3) — 이번 범위 밖, 미착수
 
 **테스트 체크리스트 (Spring Boot Test + MockMvc)**
-- [ ] 생성 → **201** + `TodoResponse`, `content`가 JSON 객체로 직렬화됨
-- [ ] `title` 누락/256자 → **400 + `COMMON_001`**
-- [ ] **타인 소유 Todo 상세 조회 → 404 + `TODO_001`** (403이 아님)
-- [ ] `PUT`에서 `status` 누락 → **400 + `COMMON_001`** (500이 아님)
-- [ ] `PUT`에서 `content`·`dueDate` 생략 → 해당 필드가 `null`로 갱신됨
+- [x] 생성 → **201** + `TodoResponse`, `content`가 JSON 객체로 직렬화됨
+- [x] `title` 누락/256자 → **400 + `COMMON_001`**
+- [x] **타인 소유 Todo 상세 조회 → 404 + `TODO_001`** (403이 아님)
+- [x] `PUT`에서 `status` 누락 → **400 + `COMMON_001`** (500이 아님)
+- [x] `PUT`에서 `content`·`dueDate` 생략 → 해당 필드가 `null`로 갱신됨
 
 ### Task 017: Todo 목록 페이지네이션·필터 API 구현
 
