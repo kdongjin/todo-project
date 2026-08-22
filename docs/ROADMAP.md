@@ -192,42 +192,44 @@ M0 ─┬─► M1 ─► M2 ─┬─► M3 ─┐
 - [ ] **루트용 GitHub 저장소 생성** (사용자 작업 — `gh` CLI 미설치)
 - [ ] 세 저장소 push — 코드 저장소는 `main`·`develop` 둘 다
 
-### Task 005: PostgreSQL `TodoListDB` 스키마 준비 및 연결 검증 🔥 우선순위
+### Task 005: PostgreSQL `TodoListDB` 스키마 준비 및 연결 검증 ✅ 완료
 
 **영역**: 공통 | **선행**: Task 003
 
-- [ ] **따옴표 없이** 스키마 생성: `CREATE SCHEMA IF NOT EXISTS TodoListDB;` (PRD 8.1)
+- [x] **따옴표 없이** 스키마 생성: `CREATE SCHEMA IF NOT EXISTS TodoListDB;` (PRD 8.1)
   - ❌ `CREATE SCHEMA "TodoListDB"` 금지 — 인용 식별자로 만들면 이름이 대문자로 고정되고, 따옴표 없이 전달되는 `default_schema`/`currentSchema`가 `todolistdb`를 찾다가 런타임에 실패한다
-- [ ] `\dn`으로 **실제 생성된 물리 스키마 이름이 `todolistdb`(소문자)** 임을 확인
-- [ ] **테스트 전용 스키마도 함께 생성**: `CREATE SCHEMA IF NOT EXISTS todolistdb_test;` (0.5 테스트 전략)
+- [x] `\dn`으로 **실제 생성된 물리 스키마 이름이 `todolistdb`(소문자)** 임을 확인
+- [x] **테스트 전용 스키마도 함께 생성**: `CREATE SCHEMA IF NOT EXISTS todolistdb_test;` (0.5 테스트 전략)
   - Hibernate의 `create_namespaces=true`가 자동 생성을 시도하지만, **수동으로 만들어 두면 M1에서 변수 하나가 준다**
   - `\dn` 결과에 `todolistdb`와 `todolistdb_test`가 **모두** 보여야 한다
-- [ ] 시스템 환경변수 주입 확인 — `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `APP_FRONTEND_URL` (PRD 12.1)
+- [x] 시스템 환경변수 주입 확인 — `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `APP_FRONTEND_URL` (PRD 12.1)
   - `OAUTH_*` 4종은 M3 착수 전까지 더미 값으로 두어도 무방하다
-- [ ] `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`로 기동해 DataSource 연결 성공 확인
+  - 실측(2026-08-22): `DB_PASSWORD`·`JWT_SECRET`은 `~/.bashrc`에서 주입, `DB_URL`·`DB_USERNAME`·`APP_FRONTEND_URL`은 dev 프로파일 로컬 기본값으로 커버됨
+- [x] `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`로 기동해 DataSource 연결 성공 확인
+  - 실측: `Default catalog/schema: postgres/todolistdb` + `Started TodoBackendApplication` 로그로 확인
 
-### Task 006: README 초안 작성
+### Task 006: README 초안 작성 ✅ 완료
 
 **영역**: 공통 | **선행**: Task 004
 
-- [ ] 루트 `README.md` 생성 (**한국어**) — 프로젝트 소개, 모노레포 구조, 사전 요구사항(JDK 21 / Node / PostgreSQL)
-- [ ] 백엔드·프론트엔드 실행 명령어 (CLAUDE.md 2장과 일치)
-- [ ] **필요 환경변수 목록** — 값은 적지 않고 이름과 용도만 (PRD 12장 참조 링크)
-- [ ] 문서 안내 — `docs/PRD.md` / `docs/API_SPEC.md` / `docs/ROADMAP.md` 역할 구분
-- [ ] M8(Task 035)에서 실제 실행 절차 검증 후 최종본으로 다듬는다
+- [x] 루트 `README.md` 생성 (**한국어**) — 프로젝트 소개, 모노레포 구조, 사전 요구사항(JDK 21 / Node / PostgreSQL)
+- [x] 백엔드·프론트엔드 실행 명령어 (CLAUDE.md 2장과 일치)
+- [x] **필요 환경변수 목록** — 값은 적지 않고 이름과 용도만 (PRD 12장 참조 링크)
+- [x] 문서 안내 — `docs/PRD.md` / `docs/API_SPEC.md` / `docs/ROADMAP.md` 역할 구분
+- [x] M8(Task 035)에서 실제 실행 절차 검증 후 최종본으로 다듬는다 — README 하단에 초안 표시 및 안내 문구 포함
 
 **산출물**: 빌드 가능한 두 프로젝트 골격, Git 저장소, DB 연결 성공
 
 **DoD**
-- [ ] **JDK 21이 활성 상태** — `java -version`이 21을 보고한다 (`JAVA_HOME` 확인)
+- [x] **JDK 21이 활성 상태** — `java -version`이 21을 보고한다 (`JAVA_HOME` 확인) — 실측: `JAVA_HOME=C:\SpringBootProject\zulu21`
 - [x] `todo-backend`가 `dev` 프로파일로 정상 기동 (빈 앱)
 - [x] **`./mvnw test` 통과** — OAuth2 `registration`/`provider` 필수 항목 누락 시 여기서 기동 실패로 드러난다 (PRD 12.2)
 - [x] `todo-frontend`가 `dev` 서버로 기동
-- [ ] DB 연결 확인 — `./mvnw test` 통과가 연결 성공을 간접적으로 시사하나, 아래 항목으로 직접 확인한다
-- [ ] **`\dn`으로 실제 생성된 스키마 이름이 `todolistdb`(소문자)임을 눈으로 확인** — 대문자로 생성됐다면 여기서 잡는다
+- [x] DB 연결 확인 — `./mvnw test` 통과가 연결 성공을 간접적으로 시사하나, 아래 항목으로 직접 확인한다
+- [x] **`\dn`으로 실제 생성된 스키마 이름이 `todolistdb`(소문자)임을 눈으로 확인** — 대문자로 생성됐다면 여기서 잡는다
 - [x] `application.properties`에 **평문 시크릿이 없음**을 확인 (전부 `${ENV}` 플레이스홀더)
-- [ ] **`git init` 완료 · `main`/`develop` 브랜치 및 초기 커밋 존재**
-- [ ] 루트 `README.md` 초안 존재
+- [x] **`git init` 완료 · `main`/`develop` 브랜치 및 초기 커밋 존재**
+- [x] 루트 `README.md` 초안 존재
 
 **의존성**: 없음
 
