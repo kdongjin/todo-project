@@ -564,17 +564,17 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 **PRD 9.1의 확정값을 그대로 반영한다** (기존 로드맵에 누락되어 있던 항목).
 
-- [ ] `app/globals.css`에 Tailwind 4 **CSS-first 디자인 토큰** 정의 (`tailwind.config.js`는 사용하지 않는다)
-  - **베이스: 무채색 `neutral`** (`components.json`의 baseColor와 일치)
-  - **액센트: `Indigo` 단 1개 고정** (PRD 13.1 확정) — 과한 그라디언트 지양
-  - **타이포그래피: `Geist` 또는 `Inter`** — 가독성 높은 산세리프, 명확한 위계
-  - **모서리: `rounded-xl`**, 그림자는 **아주 옅은 소프트 섀도우**
+- [x] `app/globals.css`에 Tailwind 4 **CSS-first 디자인 토큰** 정의 (`tailwind.config.js`는 사용하지 않는다)
+  - **베이스: 무채색 `neutral`** (`components.json`의 baseColor와 일치) — shadcn CLI 스캐폴딩 값 그대로 유지
+  - **액센트: `Indigo` 단 1개 고정** (PRD 13.1 확정) — `--primary`/`--ring`을 Tailwind 4 공식 indigo 스케일(oklch)로 교체(라이트: indigo-600, 다크: indigo-400). 그라디언트 미사용
+  - **타이포그래피: `Geist`** — `next/font/google`로 이미 로딩되어 있어 재작업 없이 그대로 사용
+  - **모서리: `rounded-xl`**, 그림자는 **아주 옅은 소프트 섀도우** — `--radius`를 0.625rem→0.75rem으로 조정
   - 넉넉한 여백, 콘텐츠 중앙 정렬, 카드 기반 리스트를 전제로 한 스페이싱 스케일
-- [ ] `providers/ThemeProvider.tsx` — **다크모드(시스템 설정 연동 + 수동 토글, 선택값 로컬 저장)** (`UI-01`)
-  - ⚠️ `next-themes`는 미설치다. 도입할지 자체 구현할지 결정하고 이유를 남긴다 (`docs/guides/styling-guide.md`는 `next-themes`를 전제하지만 실제 스택과 다르다)
-- [ ] `providers/QueryProvider.tsx` — React Query `QueryClient` 설정(재시도·`staleTime` 기본값)
-- [ ] `app/layout.tsx`에 두 프로바이더 연결
-- [ ] 필요한 shadcn/ui 컴포넌트 추가 (`npx shadcn@latest add button input card dialog select checkbox ...`) — style은 `radix-nova` 유지
+- [x] `providers/ThemeProvider.tsx` — **다크모드(시스템 설정 연동 + 수동 토글, 선택값 로컬 저장)** (`UI-01`)
+  - `next-themes`는 **도입하지 않고 자체 구현**했다. 기존 `globals.css`가 이미 `.dark` 클래스 토글 방식이라 Context + 인라인 스크립트(FOUC 방지, Next.js 16 공식 가이드 `preventing-flash-before-hydration` 패턴을 `.dark` 클래스 방식에 맞게 적용)로 충분해 불필요한 의존성을 추가하지 않았다
+- [x] `providers/QueryProvider.tsx` — React Query `QueryClient` 설정(재시도·`staleTime` 기본값)
+- [x] `app/layout.tsx`에 두 프로바이더 연결
+- [x] 필요한 shadcn/ui 컴포넌트 추가 (`npx shadcn@latest add button input card dialog select checkbox label dropdown-menu avatar badge separator`) — style은 `radix-nova` 유지
 
 ### Task 021: API 클라이언트·토큰 저장 유틸·공통 타입 정의
 
@@ -624,9 +624,9 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 **DoD**
 - [ ] 라이브러리 설치 완료 및 **PRD 1.3 설치 상태 표 갱신 완료**
-- [ ] 다크/라이트 토글 동작, 시스템 설정 연동
-- [ ] **PRD 9.1 확정값(액센트 `Indigo` / `Geist`·`Inter` / `rounded-xl` / `neutral` 베이스)이 디자인 토큰에 반영됨**
-- [ ] React Query·테마 프로바이더가 `app/layout.tsx`에 적용됨
+- [x] 다크/라이트 토글 동작, 시스템 설정 연동
+- [x] **PRD 9.1 확정값(액센트 `Indigo` / `Geist`·`Inter` / `rounded-xl` / `neutral` 베이스)이 디자인 토큰에 반영됨**
+- [x] React Query·테마 프로바이더가 `app/layout.tsx`에 적용됨
 - [ ] `Pagination` 컴포넌트 단독 렌더 및 페이지 이동 콜백 동작, `aria-current` 적용
 - [ ] API 클라이언트가 **401 응답 시 토큰 삭제 후 로그인 페이지로 리다이렉트**(루프 없이)
 - [ ] **Playwright가 설치되고 스모크 테스트가 통과함**
