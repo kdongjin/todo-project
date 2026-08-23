@@ -66,3 +66,7 @@ yarn-error.log*
 .claude/settings.local.json
 .claude/plans/
 shrimp_data/
+.playwright-mcp/
+
+# --- 임시 디버깅 스크린샷 등 ---
+*.png
