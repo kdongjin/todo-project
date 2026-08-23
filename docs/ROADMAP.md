@@ -515,29 +515,29 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 **영역**: BE | **선행**: Task 016
 
-- [ ] `PATCH /api/todos/{id}/status` — **클라이언트가 목표 상태를 바디로 지정**한다: `{"status":"DONE"}` (불변 규칙 13)
+- [x] `PATCH /api/todos/{id}/status` — **클라이언트가 목표 상태를 바디로 지정**한다: `{"status":"DONE"}` (불변 규칙 13)
   - ❌ **서버 반전 토글 금지** — 재시도·더블클릭·타임아웃 재전송에서 상태가 되돌아간다
   - `status` `@NotNull`, 잘못된 값은 `400` + `TODO_002`
   - 응답은 부분 응답이 아니라 **전체 `TodoResponse`** — 프론트가 낙관적 업데이트 후 `updatedAt`까지 캐시 정합에 쓴다 (API_SPEC 4.6)
-- [ ] `DELETE /api/todos/{id}` (200) — **Soft Delete**. `data: null`, `message: "삭제되었습니다."` (API_SPEC 4.7)
+- [x] `DELETE /api/todos/{id}` (200) — **Soft Delete**. `data: null`, `message: "삭제되었습니다."` (API_SPEC 4.7)
   - 물리 삭제 금지 (불변 규칙 5)
 
 **테스트 체크리스트 (Spring Boot Test + MockMvc)**
-- [ ] `{"status":"DONE"}` → 200 + 전체 `TodoResponse`, `status=DONE`, `updatedAt` 갱신
-- [ ] **같은 요청을 두 번 보내도 결과가 동일함(멱등성)** — 두 번째 응답도 `DONE`
-- [ ] `{"status":"INVALID"}` → **400 + `TODO_002`**, `status` 누락 → **400 + `COMMON_001`**
-- [ ] 타인 Todo 상태 변경 → **404 + `TODO_001`**
-- [ ] 삭제 후 DB에 행이 남아 있고 `deleted_at`이 채워짐 (물리 삭제 아님)
-- [ ] **삭제된 Todo를 ID로 직접 조회해도 404** (Soft Delete 누수 없음)
-- [ ] 삭제된 Todo를 다시 삭제 → 404
+- [x] `{"status":"DONE"}` → 200 + 전체 `TodoResponse`, `status=DONE`, `updatedAt` 갱신
+- [x] **같은 요청을 두 번 보내도 결과가 동일함(멱등성)** — 두 번째 응답도 `DONE`
+- [x] `{"status":"INVALID"}` → **400 + `TODO_002`**, `status` 누락 → **400 + `COMMON_001`**
+- [x] 타인 Todo 상태 변경 → **404 + `TODO_001`**
+- [x] 삭제 후 DB에 행이 남아 있고 `deleted_at`이 채워짐 (물리 삭제 아님)
+- [x] **삭제된 Todo를 ID로 직접 조회해도 404** (Soft Delete 누수 없음)
+- [x] 삭제된 Todo를 다시 삭제 → 404
 
 **DoD**
-- [ ] CRUD·상태 변경 정상 동작
-- [ ] **같은 상태 변경 요청을 두 번 보내도 결과가 동일함(멱등성)**
-- [ ] 삭제가 Soft Delete로 처리되고 목록에서 제외됨
+- [x] CRUD·상태 변경 정상 동작
+- [x] **같은 상태 변경 요청을 두 번 보내도 결과가 동일함(멱등성)**
+- [x] 삭제가 Soft Delete로 처리되고 목록에서 제외됨
 - [ ] 페이지네이션 응답에 `totalPages`, `hasNext` 등 포함. **`size=200` 요청이 100으로 절삭됨**
-- [ ] 타인 Todo 접근 시 차단 — **404 Not Found** 반환 (403은 리소스 존재 여부를 노출하므로 사용하지 않음)
-- [ ] **삭제된 Todo를 ID로 직접 조회해도 404** (Soft Delete 누수 없음)
+- [x] 타인 Todo 접근 시 차단 — **404 Not Found** 반환 (403은 리소스 존재 여부를 노출하므로 사용하지 않음)
+- [x] **삭제된 Todo를 ID로 직접 조회해도 404** (Soft Delete 누수 없음)
 - [ ] API_SPEC 4.1~4.7의 요청/응답 바디와 실제 응답이 일치함
 
 **의존성**: M2 · (M3와 병렬 가능)
@@ -552,11 +552,11 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 **영역**: FE | **선행**: M0
 
-- [ ] `@tanstack/react-query`, `react-hook-form`, `zod`, `@hookform/resolvers` 설치
-- [ ] **Framer Motion 설치 — 패키지명 확인 필요.** 최신 배포는 `motion` 패키지로 이관되었다. 설치 전 공식 문서로 정확한 패키지명·React 19 호환 버전을 확인한다 (CLAUDE.md 5장 "추측 금지")
-- [ ] Tiptap은 **M7(Task 028)** 에서 설치한다 — 지금 `import` 하지 않는다
-- [ ] 설치 후 **PRD 1.3 표의 설치 상태를 ✅와 실제 버전으로 갱신**
-- [ ] `npm run lint` + `npm run build` 통과 확인
+- [x] `@tanstack/react-query`, `react-hook-form`, `zod`, `@hookform/resolvers` 설치
+- [x] **Framer Motion 설치 — 패키지명 확인 필요.** 최신 배포는 `motion` 패키지로 이관되었다. 설치 전 공식 문서로 정확한 패키지명·React 19 호환 버전을 확인한다 (CLAUDE.md 5장 "추측 금지")
+- [x] Tiptap은 **M7(Task 028)** 에서 설치한다 — 지금 `import` 하지 않는다
+- [x] 설치 후 **PRD 1.3 표의 설치 상태를 ✅와 실제 버전으로 갱신**
+- [x] `npm run lint` + `npm run build` 통과 확인
 
 ### Task 020: 디자인 토큰·테마 프로바이더 구성 (Calm Minimal)
 
