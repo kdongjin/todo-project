@@ -65,3 +65,4 @@ yarn-error.log*
 # --- 도구 캐시 ---
 .claude/settings.local.json
 .claude/plans/
+shrimp_data/
