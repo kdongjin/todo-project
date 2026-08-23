@@ -611,26 +611,26 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 **프론트엔드 테스트 도구가 하나도 없다.** M6·M7의 사용자 플로우 검증이 전부 이 Task에 의존한다.
 
-- [ ] `@playwright/test` 설치 + `npx playwright install chromium`
-- [ ] `playwright.config.ts` — `baseURL`, `webServer`(`npm run dev`), 리포터, 타임아웃
-- [ ] `e2e/` 디렉토리 구조와 네이밍 규칙 확정 (`auth.spec.ts`, `todo.spec.ts` …)
-- [ ] `package.json`에 `"test:e2e": "playwright test"` 스크립트 추가
-- [ ] **테스트 계정 준비 방식 확정** — 시나리오마다 랜덤 이메일로 가입하는 방식을 기본으로 한다(격리 보장, 백엔드에 시드 API를 만들지 않아도 됨)
-- [ ] ⚠️ **E2E는 백엔드 기동을 전제로 한다.** 실행 순서(백엔드 dev → `npm run test:e2e`)를 README에 적는다
+- [x] `@playwright/test` 설치 + `npx playwright install chromium`
+- [x] `playwright.config.ts` — `baseURL`, `webServer`(`npm run dev`), 리포터, 타임아웃
+- [x] `e2e/` 디렉토리 구조와 네이밍 규칙 확정 (`auth.spec.ts`, `todo.spec.ts` …)
+- [x] `package.json`에 `"test:e2e": "playwright test"` 스크립트 추가
+- [x] **테스트 계정 준비 방식 확정** — 시나리오마다 랜덤 이메일로 가입하는 방식을 기본으로 한다(격리 보장, 백엔드에 시드 API를 만들지 않아도 됨)
+- [x] ⚠️ **E2E는 백엔드 기동을 전제로 한다.** 실행 순서(백엔드 dev → `npm run test:e2e`)를 README에 적는다
 
 **테스트 체크리스트 (Playwright)**
-- [ ] 스모크 시나리오 1건 통과 — 루트(`/`) 접속 시 렌더 오류 없음
+- [x] 스모크 시나리오 1건 통과 — 루트(`/`) 접속 시 렌더 오류 없음
 - [ ] 백엔드 미기동 시 실패 원인이 명확히 드러남
 
 **DoD**
-- [ ] 라이브러리 설치 완료 및 **PRD 1.3 설치 상태 표 갱신 완료**
+- [x] 라이브러리 설치 완료 및 **PRD 1.3 설치 상태 표 갱신 완료**
 - [x] 다크/라이트 토글 동작, 시스템 설정 연동
 - [x] **PRD 9.1 확정값(액센트 `Indigo` / `Geist`·`Inter` / `rounded-xl` / `neutral` 베이스)이 디자인 토큰에 반영됨**
 - [x] React Query·테마 프로바이더가 `app/layout.tsx`에 적용됨
-- [ ] `Pagination` 컴포넌트 단독 렌더 및 페이지 이동 콜백 동작, `aria-current` 적용
+- [x] `Pagination` 컴포넌트 단독 렌더 및 페이지 이동 콜백 동작, `aria-current` 적용
 - [ ] API 클라이언트가 **401 응답 시 토큰 삭제 후 로그인 페이지로 리다이렉트**(루프 없이)
-- [ ] **Playwright가 설치되고 스모크 테스트가 통과함**
-- [ ] `npm run lint` + `npm run build` 통과
+- [x] **Playwright가 설치되고 스모크 테스트가 통과함**
+- [x] `npm run lint` + `npm run build` 통과
 
 **의존성**: M0 · (백엔드와 병렬 가능)
 

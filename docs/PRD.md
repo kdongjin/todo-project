@@ -39,7 +39,7 @@
 | **Database** | PostgreSQL (스키마명: `TodoListDB`) | ⏳ M0에서 스키마 준비 |
 | **테스트 (BE)** | JUnit 5 + Spring Boot Test (MockMvc) | ✅ 스타터 설치됨 · ⏳ **M1에서 인프라 구축** |
 | **테스트 DB** | **로컬 PostgreSQL 테스트 스키마 `todolistdb_test`** | ⏳ **M1** — 아래 참조 |
-| **테스트 (FE)** | **Playwright** (E2E 전용) | ⏳ **M5에서 설치** |
+| **테스트 (FE)** | **Playwright** (E2E 전용) | ✅ **설치됨** (Task 023) |
 | **배포** | AWS Amplify(FE), EC2(BE), RDS(DB) | ⏳ M9 |
 | **형상관리** | Git, GitHub | ✅ |
 
