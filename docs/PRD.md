@@ -33,7 +33,7 @@
 | **Frontend** | Next.js **16.3.1** (App Router), React **19.2.8**, TypeScript 5, Tailwind CSS 4 | ✅ 설치됨 |
 | **UI** | shadcn **CLI 4.18.0** (style `radix-nova`, baseColor `neutral`), radix-ui, lucide-react **1.33.0** | ✅ 설치됨 |
 | **상태/모션** | React Query(TanStack Query) `@tanstack/react-query` **5.102.0**, `motion` **13.1.1**(Framer Motion 후신 패키지) | ✅ 설치됨 |
-| **에디터** | Tiptap (리치 텍스트 웹에디터) | ⏳ **M7에서 설치** |
+| **에디터** | Tiptap (리치 텍스트 웹에디터) `@tiptap/react` **3.30.2**, `@tiptap/starter-kit` **3.30.2** | ✅ 설치됨 |
 | **폼 검증** | React Hook Form **7.86.0** + Zod **4.4.3** + `@hookform/resolvers` **5.9.1** (프론트) / Bean Validation (백엔드) | ✅ 프론트·백엔드 모두 설치됨 |
 | **인증** | JWT (Access Token, 24시간 만료) + OAuth2 소셜 로그인 (Google, Kakao) | ⏳ M2·M3에서 구현 |
 | **Database** | PostgreSQL (스키마명: `TodoListDB`) | ⏳ M0에서 스키마 준비 |
