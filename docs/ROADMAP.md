@@ -844,16 +844,28 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 
 **외부 제공자 로그인은 Playwright로 자동화하지 않는다.** 실제 계정·2FA·동의 화면·봇 차단이 개입해 테스트가 불안정해지고, 자격증명을 CI에 넣게 되어 불변 규칙 9와 충돌한다. **수동 체크리스트로 분리한다.**
 
-- [ ] Google 로그인 → 신규 자동 가입 → Todo 목록 진입
-- [ ] 같은 계정으로 재로그인 → 중복 가입되지 않음
-- [ ] Kakao 로그인 → 중첩 응답 파싱 확인 → Todo 목록 진입
-- [ ] **Kakao 이메일 미제공 케이스** — 콘솔의 동의 항목 설정 확인 및 정책대로 동작
-- [ ] 기존 LOCAL 계정과 같은 이메일로 소셜 로그인 → 기존 계정으로 로그인되고 **`provider`가 `LOCAL`로 유지**
-- [ ] 위 연동 후 **기존 비밀번호 로그인이 계속 동작**
-- [ ] 콜백 후 **주소창에 토큰이 남지 않음**
-- [ ] `authorization_request_not_found`가 발생하지 않음
-- [ ] 실패 경로(동의 거부) → 로그인 페이지 + 에러 안내
-- [ ] 검증 결과를 이 문서 또는 커밋 메시지에 기록
+- [x] Google 로그인 → 신규 자동 가입 → Todo 목록 진입 — 통과 (버그 수정 후 재검증, 아래 참조)
+- [x] 같은 계정으로 재로그인 → 중복 가입되지 않음 — 통과 (버그 수정 후 재검증, 아래 참조)
+- [ ] Kakao 로그인 → 중첩 응답 파싱 확인 → Todo 목록 진입 — 보류 (Kakao 클라이언트 자격증명 미준비로 이번 회차는 Google만 검증)
+- [ ] **Kakao 이메일 미제공 케이스** — 콘솔의 동의 항목 설정 확인 및 정책대로 동작 — 보류 (위와 동일 사유)
+- [x] 기존 LOCAL 계정과 같은 이메일로 소셜 로그인 → 기존 계정으로 로그인되고 **`provider`가 `LOCAL`로 유지** — 통과 (`rlaeogus0911@gmail.com`, LOCAL 가입 후 Google 연동 → `/todos` 진입, DB `provider` 컬럼 `LOCAL` 유지 확인)
+- [x] 위 연동 후 **기존 비밀번호 로그인이 계속 동작** — 통과 (로그아웃 후 이메일+비밀번호 로그인 정상, 토큰 발급 확인)
+- [x] 콜백 후 **주소창에 토큰이 남지 않음** — 통과 (`/oauth2/callback#token=...` → `/todos`로 정리됨, 주소창에 토큰 노출 없음)
+- [x] `authorization_request_not_found`가 발생하지 않음 — 통과 (전 과정에서 쿠키 기반 AuthorizationRequestRepository 정상 동작, 관련 에러 없음)
+- [ ] 실패 경로(동의 거부) → 로그인 페이지 + 에러 안내 — 보류 (테스트 계정이 이미 앱에 동의를 완료한 상태라 Google이 동의 화면을 건너뜀(`prompt=none`). 재검증하려면 myaccount.google.com/permissions에서 앱 액세스를 해제한 뒤 재시도 필요)
+- [x] 검증 결과를 이 문서 또는 커밋 메시지에 기록 — 아래 참조
+
+**검증 결과 요약 (2026-08-24, Google만 검증, Kakao·항목9는 후속 확인 필요)**
+
+- 통과: 1(Google 신규 자동 가입), 2(재로그인 시 중복 가입 안 됨), 5(provider LOCAL 유지), 6(비밀번호 로그인 유지), 7(토큰 미노출), 8(authorization_request_not_found 없음)
+- 보류: 3·4(Kakao, 자격증명 미준비), 9(동의 거부, 테스트 계정이 이미 동의 완료 상태 — myaccount.google.com/permissions에서 앱 액세스 해제 후 재검증 필요)
+
+**중간에 발견하고 수정한 버그 — Google 로그인(OIDC) 시 신규 가입이 항상 실패하던 문제**
+
+- **증상**: 처음 보는 이메일의 Google 계정으로 로그인하면 `OAuth2SuccessHandler.java:44`에서 `CustomException: 사용자를 찾을 수 없습니다`(`AUTH_006`)가 발생하며 500 에러. 이미 DB에 있는 이메일(LOCAL 계정에 소셜 연동 등)은 문제없이 동작해서 처음엔 원인이 드러나지 않았음.
+- **원인**: Google 로그인은 `scope`에 `openid`가 포함되어 있어 Spring Security가 OIDC 로그인 경로(`OidcAuthorizationCodeAuthenticationProvider`)로 처리하는데, 기존 `SecurityConfig.java`는 `.userInfoEndpoint(u -> u.userService(customOAuth2UserService))`만 등록하고 `.oidcUserService(...)`는 등록하지 않았다. OIDC 경로에서는 Spring 기본 `OidcUserService`가 대신 쓰여 `CustomOAuth2UserService`의 신규 사용자 생성 로직이 전혀 호출되지 않았다.
+- **수정**: `todo-backend/src/main/java/com/example/auth/oauth2/OAuth2UserProvisioningService.java`(신규) — 기존 `findOrCreateUser` 로직을 공용 서비스로 분리. `CustomOAuth2UserService`는 이 서비스에 위임하도록 수정(Kakao 등 순수 OAuth2 흐름 담당, 동작 변경 없음). `CustomOidcUserService.java`(신규) — `OidcUserService`를 상속해 OIDC 경로(Google)에서도 동일한 `findOrCreateUser`가 실행되도록 구현. `SecurityConfig.java` — `.oidcUserService(customOidcUserService)`를 추가 등록.
+- **테스트**: 기존 `CustomOAuth2UserServiceTest`의 로직 검증 케이스는 `OAuth2UserProvisioningServiceTest`(신규)로 이관. 백엔드 전체 테스트 71건 통과(`./mvnw test`). 브라우저로 신규 Google 계정 가입(항목 1) 및 재로그인 시 중복 미생성(항목 2) 재현 검증 완료.
 
 ### Task 034: 예외·로딩·빈 상태·반응형 최종 점검
 
