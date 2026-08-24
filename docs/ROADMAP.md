@@ -834,9 +834,20 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 - [x] 실행 절차 정리: 백엔드 `dev` 기동(`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`, `DB_PASSWORD`·`JWT_SECRET` 등 환경변수 필요) → `todo-frontend`에서 `npm run test:e2e`. 위 3개 스펙은 기존 스펙과 달리 mock을 쓰지 않고 실 백엔드와 통신한다
 
 **테스트 체크리스트 (Playwright)**
-- [ ] 전체 플로우 시나리오 그린 — 로컬 백엔드 미기동으로 실행 검증 대기
-- [ ] 계정 격리 시나리오 그린 — 로컬 백엔드 미기동으로 실행 검증 대기
-- [ ] 세션 만료 시나리오 그린 — 로컬 백엔드 미기동으로 실행 검증 대기
+- [x] 전체 플로우 시나리오 그린 — 통과 (버그 수정 후 재검증, 아래 참조)
+- [x] 계정 격리 시나리오 그린 — 통과 (일시적 dev 모드 컴파일 지연으로 최초 1회 타임아웃 후 재실행 시 통과, 앱 결함 아님)
+- [x] 세션 만료 시나리오 그린 — 통과
+
+**검증 결과 요약 (2026-08-24)**
+
+백엔드를 `dev` 프로파일로 기동(`todolistdb` 스키마 연결 확인)하고 프론트 dev 서버를 별도로 미리 기동한 뒤(느린 파일시스템으로 인한 Playwright `webServer` 60초 타임아웃 회피) 3개 스펙을 실행했다. 최초 실행에서 3개 모두 실패했으나, `account-isolation`·`session-expiry`는 dev 모드 첫 컴파일 지연/3-worker 동시 실행 경합으로 인한 일시적 타임아웃임을 단일 worker 재실행으로 확인(재실행 시 통과, 앱·테스트 결함 아님). `full-flow.spec.ts`는 재현 가능한 실제 테스트 코드 결함으로 판명되어 수정했다(아래 참조). 수정 후 3개 스펙을 순차 재실행해 **3 passed**(25.8초)를 확인했고 `npm run lint`도 통과했다.
+
+**중간에 발견하고 수정한 버그 — `full-flow.spec.ts`의 경쟁 상태(race condition)로 인한 테스트 실패**
+
+- **증상**: Todo 제목을 수정하는 단계에서 `저장` 버튼을 찾지 못해 타임아웃. 재현율 100%(동일 조건 재실행 시 항상 실패).
+- **원인**: 목록에서 Todo 제목 링크를 클릭한 직후, `/todos/{id}` 상세 페이지로의 네비게이션 완료를 기다리지 않고 바로 `page.getByLabel("제목")`으로 새 제목을 입력했다. 이 로케이터가 `exact` 옵션 없이 부분일치라 목록 페이지의 `aria-label="제목 검색"` 필터 인풋(`TodoFilter.tsx`)과도 매칭되어, 네비게이션이 완료되기 전에 실행되면 상세 페이지 대신 목록의 필터박스를 채워버렸다. 그 결과 앱이 `/todos?keyword=...`로 되돌아가 있었고, 이후 존재하지 않는 상세 페이지의 저장 버튼을 기다리다 타임아웃했다. trace.zip의 네트워크 로그(`/todos/11` 요청 직후 `/todos?keyword=...` 요청이 바로 이어짐)로 원인을 특정했다. `account-isolation.spec.ts`는 이미 `waitForURL`을 쓰고 있어 이 문제가 없었다.
+- **수정**: `todo-frontend/e2e/full-flow.spec.ts` — 제목 링크 클릭 직후 `await page.waitForURL(/\/todos\/\d+$/)`을 추가하고, `getByLabel("제목")`에 `{ exact: true }`를 추가해 필터박스와의 오매칭을 방지했다.
+- **테스트**: 수정 후 `full-flow.spec.ts` 단독 재실행 통과, 3개 스펙 순차 재실행 모두 통과, `npm run lint` 통과. 동일 패턴(`getByLabel("제목")` 부분일치)을 쓰는 `account-isolation.spec.ts`·`todo-form.spec.ts`는 필터박스가 없는 `/new`·`/edit` 페이지에서만 쓰여 안전함을 확인해 손대지 않았다.
 
 ### Task 033: 소셜 로그인 수동 검증 체크리스트 수행
 
@@ -871,12 +882,23 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 
 **영역**: 공통 | **선행**: Task 032
 
-- [ ] 주요 엣지 케이스 — 만료 토큰, 빈 목록, 검증 실패, 네트워크 오류, 백엔드 다운
-- [ ] 모든 API 실패 응답이 `ApiResponse` 포맷인지 확인 — **특히 필터 단계 401** (M2 Task 012)
-- [ ] 로딩 스켈레톤/스피너, 빈 상태, 에러 UI가 모든 화면에 존재
-- [ ] 반응형 확인 (모바일/태블릿/데스크톱)
-- [ ] 다크모드에서 대비·가독성 점검 (액센트 `Indigo` 포함)
-- [ ] 접근성 스팟체크 — 페이지네이션 `aria`, 폼 라벨, 키보드 내비게이션
+- [x] 주요 엣지 케이스 — 만료 토큰, 빈 목록, 검증 실패, 네트워크 오류, 백엔드 다운 — 통과 (아래 참조)
+- [x] 모든 API 실패 응답이 `ApiResponse` 포맷인지 확인 — **특히 필터 단계 401** (M2 Task 012) — 통과 (아래 참조)
+- [x] 로딩 스켈레톤/스피너, 빈 상태, 에러 UI가 모든 화면에 존재 — 통과, 결함 1건 발견 후 수정 (아래 참조)
+- [ ] 반응형 확인 (모바일/태블릿/데스크톱) — 보류 (아래 참조)
+- [x] 다크모드에서 대비·가독성 점검 (액센트 `Indigo` 포함) — 통과 (아래 참조)
+- [ ] 접근성 스팟체크 — 페이지네이션 `aria`, 폼 라벨, 키보드 내비게이션 — 부분 보류 (아래 참조)
+
+**검증 결과 요약 (2026-08-24)**
+
+정적 조사 결과 `TodoList.tsx`·`TodoForm.tsx`·`TodosView.tsx`·`Pagination.tsx`·`JwtAuthenticationEntryPoint`/`GlobalExceptionHandler`가 이미 로딩·에러·빈상태·접근성·공통 응답 포맷을 견고하게 구현하고 있음을 확인했다. 미확인 컴포넌트 4종(`TodoItem.tsx`, `todos/[id]/page.tsx`, `Header.tsx`, `SocialLoginButtons.tsx`)을 추가로 읽어 조사를 마쳤다.
+
+- **엣지 케이스·네트워크 오류**: 백엔드 프로세스를 강제 종료한 뒤 로그인을 시도해, 프론트가 크래시 없이 "요청 처리 중 오류가 발생했습니다"를 `role="alert"`로 표시함을 확인(`LoginForm.tsx`의 `ApiError` 폴백 처리). 이후 백엔드를 재기동해 정상 복구를 확인했다. 검증 실패(400)는 회원가입 폼에 잘못된 이메일·짧은 비밀번호를 입력해 "올바른 이메일 형식이 아닙니다"·"비밀번호는 6자 이상이어야 합니다"가 정확히 표시됨을 확인. 만료 토큰 엣지 케이스는 `e2e/session-expiry.spec.ts`(Task 032) 통과로 자동 커버된다.
+- **401 응답 포맷**: `curl`로 실제 `JWT_SECRET`을 이용해 만료 토큰(HS256, `exp` 과거)과 다른 시크릿으로 서명한 위조 토큰을 직접 생성해 재현했다. 토큰 없음/형식 오류 → `AUTH_003`, 만료 → `AUTH_004`, 서명 불일치 → `AUTH_005`가 모두 `{success:false,data:null,message,errorCode}` `ApiResponse` 포맷으로 정확히 응답됨을 확인했다. `JwtAuthenticationEntryPoint`가 `GlobalExceptionHandler`와 별도로 필터 단계 401을 이미 `ApiResponse`로 직렬화하고 있어, 우려했던 "필터 단계 401이 포맷을 벗어날 수 있다"는 리스크는 실측으로 해소됐다.
+- **로딩/에러/빈상태 결함 1건 발견 및 수정**: `todos/[id]/page.tsx`의 `deleteMutation`에 `TodoItem.tsx`와 달리 삭제 실패 시 에러 표시가 없었다. `TodoItem.tsx`의 기존 패턴(`ApiError` 분기 + `role="alert"`)을 그대로 재사용해 `deleteError` 변수와 에러 문단을 추가했다. `window.fetch`를 몽키패치해 DELETE 요청만 실패하도록 재현한 뒤 "삭제에 실패했습니다." 에러가 다이얼로그에 정상 표시됨을 확인했다. `npm run lint`·`npm run build` 모두 통과. `Header.tsx`(사용자 정보 로딩/실패 UI 없음, 아바타 이니셜 하나뿐이라 저위험)와 `SocialLoginButtons.tsx`(즉시 리다이렉트 구조라 해당없음, 실패는 `oauth2/callback#error=` 페이지가 처리)는 결함으로 보지 않았다.
+- **반응형 확인 — 보류**: `resize_window` 브라우저 자동화 도구가 이 세션에서 실제 캡처 뷰포트에 반영되지 않는 한계를 새 탭 포함 2회 재현 확인했다(390×844 요청 후에도 항상 1107×538로 캡처, `window.innerWidth`로도 미반영 확인). 앱 결함이 아니라 세션 도구 제약이다. 대신 코드 검토로 대체 확인: `TodoFilter.tsx`가 `flex-col sm:flex-row` 모바일 우선 패턴을 쓰고, 주요 컨테이너(`TodosView`, `Header` 등)가 `max-w-5xl mx-auto px-4` 유동 레이아웃 + 기본 `flex-col` 구조라 별도 브레이크포인트 없이도 좁은 화면에서 자연스럽게 축소되는 구조임을 확인했다. **실제 뷰포트에서의 육안 검증은 못했으므로 후속 세션에서 재시도가 필요하다.**
+- **다크모드**: `ThemeToggle` 드롭다운으로 다크 테마로 전환한 뒤 로그인·회원가입·Todo 목록(헤더·네비·필터·로딩 스피너·빈 상태·폼·Tiptap 에디터)을 순회하며 대비와 인디고 액센트·포커스 링 가독성을 확인, 전반적으로 양호했다. 전환 도중 테마 아이콘(Sun/Moon)의 SSR/CSR 하이드레이션 불일치 경고가 콘솔에 1회 포착됐으나 Fast Refresh 리빌드 직후 발생해 dev 모드 HMR 잔여효과일 가능성이 높고 재현성을 확정하지 못해 별도 기록만 남긴다(추가 조사 필요, 코드 수정은 하지 않음).
+- **접근성 — 부분 보류**: `Pagination.tsx`·`LoginForm.tsx`가 네이티브 `button`/`input`/`label htmlFor`와 `aria-label`을 사용하는 구조임을 코드로 재확인했다(정적 근거로는 통과). 다만 이 브라우저 자동화 세션에서 synthetic 클릭/Tab 키 입력이 `document.activeElement`를 안정적으로 이동시키지 못하는 도구 한계를 발견해(클릭 후에도 `activeElement`가 `BODY`로 남는 현상 재현) 실제 Tab 키만으로의 라이브 내비게이션 검증은 완결하지 못했다. **후속 세션에서 재시도가 필요하다.**
 
 ### Task 035: README 및 문서 정합성 마무리
 
