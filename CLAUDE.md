@@ -10,7 +10,7 @@
 
 - **Backend**: Spring Boot 4.x · JDK 21 · Maven · Spring Data JPA/Hibernate · Spring Security · JWT
 - **Frontend**: Next.js 16(App Router) · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui · lucide-react · React Query · Framer Motion · Tiptap
-  - ⚠️ React Query·Framer Motion·Tiptap·React Hook Form·Zod는 **아직 설치되지 않았다.** 설치 시점은 [PRD 1.3 설치 상태 표](./docs/PRD.md#13-기술-스택) 참조. 미설치 라이브러리를 `import` 하지 않는다
+  - ✅ React Query·Framer Motion(`motion` 패키지)·Tiptap·React Hook Form·Zod는 **모두 설치 완료**되었다. 실제 버전은 [PRD 1.3 설치 상태 표](./docs/PRD.md#13-기술-스택) 참조
 - **DB**: PostgreSQL (스키마 `TodoListDB`)
 - **구조**: 모노레포 `todo-project/{todo-backend, todo-frontend}`
 

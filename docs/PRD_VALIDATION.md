@@ -259,6 +259,8 @@ PRD 1.3은 **"아래 버전은 실제 프로젝트에 설치된 값이다"**라�
 4. 이미 커밋 이력이 있다면 로컬 DB 비밀번호를 교체(로컬 전용이라도 습관화).
 
 **긴급도**: 최상. M1 착수 전.
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `application.properties`는 `spring.datasource.password=${DB_PASSWORD}` 플레이스홀더만 사용하며 평문 값이 없다. `application-dev.properties`/`application-prod.properties`도 별도로 존재한다.
 </reasoning>
 
 ### Issue #2 — `content` JSONB의 JPA 매핑 방식 미명시 + Jackson 3/Hibernate 7 FormatMapper 부재
@@ -283,6 +285,8 @@ PRD 1.3은 **"아래 버전은 실제 프로젝트에 설치된 값이다"**라�
 **권고**: PRD 8.3에 "**JSONB 매핑 방침**" 소절을 신설해 1~2안 중 하나를 확정하고, 12.1 예시에 `json_format_mapper` 항목을 추가.
 
 **긴급도**: 최상. M1 엔티티 설계 전.
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `Todo.java`가 `@JdbcTypeCode(SqlTypes.JSON)`(1안)으로 매핑되어 있고, `application.properties`의 `json_format_mapper` 설정은 주석 처리된 채로도 정상 동작해 정공법(2안) 없이 해소되었다. `TodoController`/`TodoService`가 `content` 필드를 포함해 완성되어 있어 애플리케이션 기동·CRUD 전 과정이 동작함을 코드로 확인했다.
 </reasoning>
 
 ### Issue #3 — OAuth2 JWT를 쿼리스트링으로 전달 (PRD 6.3 / 7.1, API_SPEC 3.5)
@@ -303,6 +307,8 @@ PRD 1.3은 **"아래 버전은 실제 프로젝트에 설치된 값이다"**라�
 **권고**: 최소 1안, 여유가 있으면 2안. 어느 쪽이든 PRD 6.3/7.1과 API_SPEC 3.5를 **동시에** 갱신해야 한다.
 
 **긴급도**: 상. M3 착수 전.
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `OAuth2SuccessHandler.java:49`가 `frontendUrl + "/oauth2/callback#token=" + URLEncoder.encode(...)`로 **URL 프래그먼트(1안)**를 사용한다. 테스트(`OAuth2SuccessHandlerTest.java:57`)도 `#token=`으로 시작함을 검증한다.
 </reasoning>
 
 ### Issue #4 — PRD 1.3의 "실제 프로젝트에 설치된 값" 주장이 5개 항목에서 사실이 아님
@@ -319,6 +325,8 @@ PRD 1.3은 **"아래 버전은 실제 프로젝트에 설치된 값이다"**라�
 **해결 방안**: PRD 1.3 표에 **설치 상태 열**을 추가하거나("✅ 설치됨" / "⏳ M0·M5 설치 예정"), 서두 문장을 "**버전이 명시된 항목은 실제 설치값이며, 미명시 항목은 마일스톤 진행 중 설치한다**"로 정정. `shadcn/ui 4.18.0` → `shadcn CLI 4.18.0` 표기 정정.
 
 **긴급도**: 상. 구현 착수 전(문서 신뢰성 문제이며 수정 비용은 낮다).
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `package.json`에 React Query(`@tanstack/react-query` 5.102.0), Framer Motion 후신(`motion` 13.1.1), Tiptap(`@tiptap/react`·`@tiptap/starter-kit` 3.30.2), React Hook Form(7.86.0), Zod(4.4.3)가 전부 설치되어 있음을 확인했다. PRD 1.3 표도 Task 035에서 해당 행을 ✅로 갱신했다. `docs/guides/forms-react-hook-form.md`의 "아직 설치되어 있지 않음" 문구도 Task 035에서 정정했다.
 </reasoning>
 
 ---
@@ -330,30 +338,42 @@ PRD 1.3은 **"아래 버전은 실제 프로젝트에 설치된 값이다"**라�
 [FACT] PostgreSQL은 따옴표 없는 식별자를 **소문자로 폴딩**한다. Hibernate `default_schema=TodoListDB`와 JDBC `currentSchema=TodoListDB`는 따옴표 없이 전달되므로 실제 조회 대상은 `todolistdb`가 된다. 스키마를 `CREATE SCHEMA "TodoListDB"`로 만든 환경에서는 **런타임 실패**, 따옴표 없이 만든 환경(실제 이름 `todolistdb`)에서는 정상 동작한다.
 **권고**: PRD 8.1에 "논리 스키마명은 `TodoListDB`, **물리 식별자는 따옴표 없이 생성되어 `todolistdb`로 폴딩됨**"을 한 줄로 확정하거나, 인용 식별자를 쓸 경우 그 사실을 명시. ROADMAP M0 DoD("DB 연결 확인")에 **테이블이 생성된 스키마 실측** 항목을 추가하면 조기에 잡힌다.
 
+> ✅ **해소됨 (Task 035 실측 확인)** — `application-dev.properties`가 `currentSchema=todolistdb`(소문자, 따옴표 없음)를 사용하고, ROADMAP M0 DoD에 `\dn`으로 물리 스키마명이 `todolistdb`임을 확인한 체크가 되어 있다.
+
 ### Major #2 — `PATCH /api/todos/{id}/status`의 "토글"이 비멱등
 
 [FACT] 서버가 현재 상태를 반전시키는 바디 없는 요청은 재시도할 때마다 결과가 달라진다. React Query 재시도, 네트워크 타임아웃 후 재전송, 더블클릭이 모두 **상태 되돌림**을 유발한다. 또한 API_SPEC 4.6 응답은 `{id, status}`뿐이라 다른 엔드포인트의 `TodoResponse`와 계약이 다르고, 낙관적 업데이트 후 캐시 정합(`updatedAt`)을 맞출 수 없다.
 **권고** [ALTERNATIVE]: 요청 바디를 `{"status": "DONE"}`으로 바꿔 **목표 상태를 클라이언트가 지정**(멱등)하고, 응답은 전체 `TodoResponse`로 통일. UI의 "토글" 경험은 그대로 유지된다(현재 값의 반대를 보내면 된다). `TODO_002`(잘못된 상태값)가 이미 정의되어 있어 이 변경과 잘 맞는다. PRD 4.2 TODO-05·7.2·API_SPEC 4.6 동시 수정.
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `TodoStatusUpdateRequest`가 `@NotBlank String status`로 **목표 상태를 클라이언트가 지정**하는 구조다(불변 규칙 13과 일치). 토글 방식이 아니다.
 
 ### Major #3 — `PUT /todos/{id}`의 "생략 필드 null 갱신" ↔ `status NOT NULL` 충돌
 
 API_SPEC 4.5는 "전체 교체(PUT). 생략된 필드는 `null`로 갱신된다"라고 하지만 PRD 8.2의 `status`는 `NOT NULL DEFAULT 'TODO'`이고 `title`도 `NOT NULL`이다. 클라이언트가 `status`를 생략하면 제약 위반(500)이 된다.
 **권고**: "`title`·`status`는 필수(`@NotBlank`/`@NotNull`), `content`·`dueDate`만 생략 시 `null`로 갱신"으로 규칙을 정밀화하고 PUT 요청 DTO의 Bean Validation과 함께 명시.
 
+> ✅ **해소됨 (Task 035 실측 확인)** — `TodoUpdateRequest`가 정확히 권고안대로 `title`·`status`는 `@NotBlank`(필수), `content`·`dueDate`는 제약 없음(생략 시 null 허용)으로 구현되어 있다.
+
 ### Major #4 — `ApiResponse.data`의 실패 시 타입 모순
 
 API_SPEC 1.1은 "`data`: 실패 시 `null`", 1.3은 실패 응답 `data`에 **필드 에러 맵**을 담는다. 두 규정이 동시에 성립할 수 없어 `ApiResponse<T>`의 Java 제네릭과 TS 타입 정의가 흔들린다.
 **권고**: 1.1을 "실패 시 `null`, 단 검증 실패(`COMMON_001`)에 한해 `Record<string, string>` 필드 에러 맵"으로 정정하고, TS 타입을 분기(`data: T | Record<string,string> | null` 또는 별도 `ValidationErrorResponse`). PRD 13.2 표에도 각주 추가.
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `ApiResponse.java`가 정확히 권고안대로 `fail()`은 `data=null`, `validationFail(Map<String,String>)`은 필드 에러 맵을 담는 별도 팩토리 메서드로 분리되어 있다.
 
 ### Major #5 — 필터 단계 401은 `GlobalExceptionHandler`를 거치지 않는다
 
 [FACT] `JwtAuthenticationFilter`/`AuthenticationEntryPoint`에서 발생하는 401은 `@RestControllerAdvice`에 도달하지 않는다. 따라서 API_SPEC의 "모든 응답은 예외 없이 `ApiResponse`로 감싼다"와 `AUTH_003/004/005`(401) 계약은 **커스텀 EntryPoint 없이는 지켜지지 않는다**. 프론트의 401 처리(토큰 삭제 후 리다이렉트)는 상태코드만 보므로 동작은 하지만, 에러코드 기반 메시지 표시는 깨진다.
 **권고**: PRD 2.1 구조에 `JwtAuthenticationEntryPoint`(및 `AccessDeniedHandler`)를 추가하고, ROADMAP M2 DoD에 "인증 실패 응답도 `ApiResponse` 포맷" 항목 추가.
 
+> ✅ **해소됨 (Task 035 실측 확인)** — `com.example.auth.jwt.JwtAuthenticationEntryPoint`가 구현되어 있고 `SecurityConfig`에 배선되어 있다.
+
 ### Major #6 — 무상태(STATELESS) 정책과 OAuth2 인가 요청 저장소의 충돌
 
 [INFERENCE, 높은 확신] PRD 10장은 무상태 JWT를 전제하지만, Spring Security의 OAuth2 로그인은 기본적으로 **HttpSession 기반 `OAuth2AuthorizationRequestRepository`**로 state/PKCE를 보관한다. `SessionCreationPolicy.STATELESS`를 설정하면 콜백에서 `authorization_request_not_found`가 발생한다.
 **권고**: PRD 10장 또는 ROADMAP M3 작업 항목에 "**OAuth2 인가 요청은 쿠키 기반 저장소를 사용하거나, `/oauth2/**`·`/login/oauth2/**` 경로에 한해 세션 생성을 허용**한다"를 명시. M3 DoD의 "Google 로그인 성공"만으로는 이 함정을 사전에 드러내지 못한다.
+
+> ✅ **해소됨 (Task 035 실측 확인)** — `HttpCookieOAuth2AuthorizationRequestRepository`가 구현되어 **쿠키 기반 저장소(1안)**로 무상태 정책과 충돌 없이 동작한다.
 
 ### Major #7 — `users.provider` 단일 컬럼 모델이 "기존 이메일 계정 연동"(AUTH-03)을 표현하지 못함
 
@@ -368,6 +388,8 @@ PRD 4.1 AUTH-03과 API_SPEC 3.5는 "기존 이메일 → 해당 계정에 연동
 
 어느 쪽이든 **정책을 명문화하지 않으면 M3에서 구현자가 임의 결정**하게 된다.
 
+> ✅ **해소됨 (Task 035 실측 확인)** — PRD.md 13.1 "소셜 계정 연동 정책(AUTH-03)" 절에 **1안(MVP 최소 변경)**이 정확히 명문화되어 있다: `provider`는 최초 가입 수단을 유지하고, 소셜 재로그인은 이메일 매칭으로 허용하며, 로컬 비밀번호가 있으면 비밀번호 로그인도 계속 유효하다.
+
 ### Major #8 — `@SQLRestriction` 적용 범위의 불확실성 (Soft Delete 누수 위험)
 
 - [FACT] 네이티브 쿼리에는 적용되지 않는다 → `keyword` 검색이나 통계성 쿼리를 네이티브로 작성하면 삭제 데이터가 노출된다.
@@ -377,11 +399,15 @@ PRD 4.1 AUTH-03과 API_SPEC 3.5는 "기존 이메일 → 해당 계정에 연동
 
 **권고**: 조회는 `findByIdAndUser_IdAndDeletedAtIsNull` 형태의 **파생 쿼리로 소유권 검증과 Soft Delete를 동시에** 처리(방어적이고 다른 이슈와 무관하게 안전). ROADMAP M1 DoD("Soft Delete 조회 제외 테스트")에 **① findById 경로 ② count 쿼리 ③ keyword 검색 경로** 3가지를 명시적으로 추가.
 
+> 🟡 **부분 해소 (Task 035 실측 확인)** — `TodoRepository.findByIdAndUser_IdAndDeletedAtIsNull`이 권고안대로 구현되어 단건 조회 경로(①)는 확인했다. count/keyword 경로(②③)까지 테스트로 확정됐는지는 이번 세션에서 확인하지 못해 손대지 않았다.
+
 ### Major #9 — 공통 헤더(PRD 6.7)와 AUTH-04/AUTH-05가 ROADMAP 어느 마일스톤에도 없음
 
 PRD 6.7은 `Header.tsx`가 AUTH-04(내 정보 표시)·AUTH-05(로그아웃)·UI-01(테마 토글)을 **여기서만** 구현한다고 못박았지만, ROADMAP M5는 다크모드/Pagination만, M6은 로그인·회원가입·소셜·인증 가드만, M7은 Todo 화면만 다룬다. **헤더·사용자 메뉴·로그아웃이 어떤 작업 목록/DoD에도 등장하지 않는다.**
 또한 ROADMAP **부록 A는 존재하지 않는 "PRD Phase 0~9"에 매핑**하고 있고(PRD 11장은 Phase를 정의하지 않음), **M1의 "PRD 3.2 스키마"는 실제로 PRD 8.2**다.
 **권고**: ROADMAP M6 작업/DoD에 "공통 헤더(`Header.tsx`) + 사용자 메뉴(AUTH-04) + 로그아웃(AUTH-05)"을 추가하고, 부록 A는 삭제하거나 "PRD 11장이 ROADMAP에 위임" 문구로 대체, M1의 절 번호를 8.2로 정정. (**PRD가 아니라 ROADMAP 수정 대상**)
+
+> ✅ **해소됨 (Task 035 실측 확인)** — ROADMAP M6 Task 027이 정확히 권고안대로 "공통 헤더·테마 토글 구현 (AUTH-04 / AUTH-05 / UI-01)"이며 `Header.tsx`, 내 정보 표시, 로그아웃이 DoD에 포함·체크되어 있다. 부록 A "기능 ID ↔ 마일스톤 매핑" 표도 `AUTH-04`/`AUTH-05`를 M6 Task 027로 정확히 매핑하고 있다.
 
 ### Major #10 — 문서 링크·가이드 스택 정보의 구식화
 
@@ -392,10 +418,14 @@ PRD 6.7은 `Header.tsx`가 AUTH-04(내 정보 표시)·AUTH-05(로그아웃)·UI
 
 **권고**: PRD를 단일 진실로 두고 각 가이드 상단에 "스택 사실은 PRD 1.3을 따른다"는 각주 추가 + 위 값 정정.
 
+> ✅ **해소됨 (Task 035 실측 확인)** — `CLAUDE.md`가 `./docs/PRD.md`·`./docs/ROADMAP.md`로 올바르게 링크한다. `guides/styling-guide.md`(radix-nova·next-themes/prettier 미설치 상태 정확히 기재), `guides/nextjs-16.md`("16.3.1"), `guides/component-patterns.md`("Next.js 16.3.1 + React 19.2.8")가 전부 실제 스택과 일치함을 Task 035에서 재확인했다. 각 가이드 상단에 "스택 사실의 단일 출처는 PRD 1.3" 각주도 이미 추가되어 있다. 단, `CLAUDE.md`의 "React Query·Framer Motion·Tiptap·React Hook Form·Zod는 아직 설치되지 않았다" 문구는 이제 사실과 다르다 — 이 문구는 `docs/PRD_VALIDATION.md` 범위 밖(CLAUDE.md 자체 수정)이라 이번 Task에서는 갱신하지 않았다.
+
 ### Major #11 — `keyword` 검색이 PRD 8.2 인덱스로 커버되지 않음
 
 [INFERENCE] API_SPEC이 요구하는 "`title` 부분 일치, 대소문자 무시"는 `LOWER(title) LIKE '%kw%'` 형태가 되며, **선행 와일드카드 때문에 B-tree 인덱스를 사용할 수 없다**. PRD 8.2의 두 인덱스는 `user_id`/`status`/`deleted_at` 조합만 커버한다. 사용자당 데이터가 적은 MVP에서는 문제가 없지만, PRD 1.2가 "확장성: 대량 데이터 처리"를 핵심 가치로 내세운 것과는 어긋난다.
 **권고**: PRD 7장 쿼리 표에 "대소문자 무시"를 명시(API_SPEC과 일치)하고, 8.2에 "검색은 `user_id` 선필터 후 스캔 — 대량 데이터 시 `pg_trgm` GIN 인덱스 도입 검토(MVP 범위 외)" 각주 추가.
+
+> 🟡 **부분 해소 (Task 035 실측 확인)** — `TodoRepository.findByUser_IdAndTitleContainingIgnoreCase`로 대소문자 무시 검색은 구현되어 API_SPEC과 일치함을 확인했다. `pg_trgm` GIN 인덱스 도입 여부는 MVP 범위 외로 남아 있어 손대지 않았다.
 
 ---
 

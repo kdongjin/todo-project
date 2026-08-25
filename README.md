@@ -54,6 +54,22 @@ npm run build           # 프로덕션 빌드
 npm run lint            # 린트
 ```
 
+## E2E 테스트 (Playwright)
+
+Playwright 시나리오는 **백엔드가 기동된 상태**를 전제로 한다(모킹하지 않고 실제 API를 호출한다). 프론트 개발 서버는 `playwright.config.ts`의 `webServer` 설정이 자동으로 띄워준다.
+
+```bash
+# 1. 백엔드를 dev 프로파일로 먼저 기동해 둔다 (별도 터미널)
+cd todo-backend
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 2. 프론트 저장소에서 E2E 실행 (webServer가 next dev를 자동 기동)
+cd todo-frontend
+npx playwright test
+```
+
+실행 순서: **백엔드 dev 기동 → Playwright `webServer`가 `next dev` 자동 기동 → 테스트 실행**.
+
 ## 환경변수
 
 민감정보는 Git에 커밋하지 않고 환경변수로만 주입한다 (CLAUDE.md 불변 규칙 9). 값은 각자 로컬 환경에서 설정한다.
@@ -79,4 +95,4 @@ npm run lint            # 린트
 - [docs/PRD_VALIDATION.md](./docs/PRD_VALIDATION.md) — PRD 기술 검증 결과
 - [docs/guides/](./docs/guides/) — 프레임워크별 개발 가이드
 
-> ⚠️ 이 README는 초안이다. M8(Task 035)에서 실제 실행 절차를 검증한 뒤 최종본으로 다듬는다.
+> ✅ M8(Task 035)에서 실제 실행 절차(사전 요구사항 → 스키마 → 환경변수 → 백엔드/프론트 실행 → E2E)를 실측 검증했다.

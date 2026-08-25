@@ -35,10 +35,10 @@
 | **상태/모션** | React Query(TanStack Query) `@tanstack/react-query` **5.102.0**, `motion` **13.1.1**(Framer Motion 후신 패키지) | ✅ 설치됨 |
 | **에디터** | Tiptap (리치 텍스트 웹에디터) `@tiptap/react` **3.30.2**, `@tiptap/starter-kit` **3.30.2** | ✅ 설치됨 |
 | **폼 검증** | React Hook Form **7.86.0** + Zod **4.4.3** + `@hookform/resolvers` **5.9.1** (프론트) / Bean Validation (백엔드) | ✅ 프론트·백엔드 모두 설치됨 |
-| **인증** | JWT (Access Token, 24시간 만료) + OAuth2 소셜 로그인 (Google, Kakao) | ⏳ M2·M3에서 구현 |
-| **Database** | PostgreSQL (스키마명: `TodoListDB`) | ⏳ M0에서 스키마 준비 |
-| **테스트 (BE)** | JUnit 5 + Spring Boot Test (MockMvc) | ✅ 스타터 설치됨 · ⏳ **M1에서 인프라 구축** |
-| **테스트 DB** | **로컬 PostgreSQL 테스트 스키마 `todolistdb_test`** | ⏳ **M1** — 아래 참조 |
+| **인증** | JWT (Access Token, 24시간 만료) + OAuth2 소셜 로그인 (Google, Kakao) | ✅ 완료 (M2·M3 구현·커밋 완료) |
+| **Database** | PostgreSQL (스키마명: `TodoListDB`) | ✅ 완료 (M0에서 `todolistdb` 소문자 폴딩 실측 확인) |
+| **테스트 (BE)** | JUnit 5 + Spring Boot Test (MockMvc) | ✅ 완료 (M1 Task 007에서 인프라 구축 완료) |
+| **테스트 DB** | **로컬 PostgreSQL 테스트 스키마 `todolistdb_test`** | ✅ 완료 (M1 Task 007에서 구축 완료) |
 | **테스트 (FE)** | **Playwright** (E2E 전용) | ✅ **설치됨** (Task 023) |
 | **배포** | AWS Amplify(FE), EC2(BE), RDS(DB) | ⏳ M9 |
 | **형상관리** | Git, GitHub | ✅ |

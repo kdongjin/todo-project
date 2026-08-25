@@ -37,7 +37,7 @@
 ### 패키지 설치
 
 ```bash
-# ⚠️ 이 프로젝트에는 아직 설치되어 있지 않습니다. (ROADMAP M5에서 설치)
+# ✅ 이 프로젝트에 이미 설치되어 있습니다 (react-hook-form 7.86.0, zod 4.4.3, @hookform/resolvers 5.9.1 — package.json 기준)
 npm install react-hook-form @hookform/resolvers zod
 ```
 

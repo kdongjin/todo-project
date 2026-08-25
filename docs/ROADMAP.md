@@ -904,24 +904,26 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 
 **영역**: 공통 | **선행**: Task 034
 
-- [ ] **README 완성** (한국어) — 신규 환경에서 **처음부터 재현 가능**하도록: 사전 요구사항 → 스키마 생성 → 환경변수 → 백엔드 실행 → 프론트 실행 → E2E 실행
-- [ ] **PRD 1.3 설치 상태 표 최종 확인** — 모든 ⏳가 ✅와 실제 버전으로 바뀌었는지
-- [ ] **`docs/guides/` 스택 정보 갱신** (PRD_VALIDATION Major #10)
-  - `nextjs-16.md`: "16.3.0" → **16.3.1**
-  - `styling-guide.md`: shadcn **new-york** 전제 → 실제 **`radix-nova`**, `next-themes`·`prettier-plugin-tailwindcss` 설치 여부와 일치시킴
-  - `component-patterns.md`: "Next.js 15.5.3" → **16.3.1**
-- [ ] 부록 C(위험 추적) 상태 갱신 — 해소된 항목 표시
-- [ ] `develop` → `main` 머지 및 태그
+- [x] **README 완성** (한국어) — 신규 환경에서 **처음부터 재현 가능**하도록: 사전 요구사항 → 스키마 생성 → 환경변수 → 백엔드 실행 → 프론트 실행 → E2E 실행
+- [x] **PRD 1.3 설치 상태 표 최종 확인** — 모든 ⏳가 ✅와 실제 버전으로 바뀌었는지
+- [x] **`docs/guides/` 스택 정보 갱신** (PRD_VALIDATION Major #10) — 실측 결과 기존 3개 파일은 이미 정확했고, `forms-react-hook-form.md`의 stale 문구(react-hook-form/zod 미설치 표기)를 추가로 발견해 수정했다
+  - `nextjs-16.md`: **16.3.1** — 이미 정확함(확인만)
+  - `styling-guide.md`: 실제 **`radix-nova`**, `next-themes`·`prettier-plugin-tailwindcss` 미설치 상태 — 이미 정확함(확인만)
+  - `component-patterns.md`: **16.3.1** — 이미 정확함(확인만)
+- [x] 위험 추적(Critical/Major Issues) 상태 갱신 — 해소된 항목 표시 (Critical 4건 전부 해소, Major 11건 중 9건 해소·2건 부분 해소로 표시. "부록 C"라는 명칭 섹션은 존재하지 않아 실제 위험 추적 섹션인 Critical/Major Issues에 표시함)
+- [x] `develop` → `main` 머지 및 태그 — 실측 결과 `develop`에 `main`에 없는 커밋이 없어(오히려 `develop`이 뒤처짐) 병합은 불필요했다. 사용자 승인 하에 backend·frontend 양쪽 `origin/main`에 `v0.8.0` 태그를 부여했다
 
 **DoD**
-- [ ] 핵심 사용자 흐름 무결점 통과 (**Playwright 자동 시나리오 전부 그린**)
-- [ ] **소셜 로그인 수동 체크리스트 전 항목 통과**
-- [ ] 주요 엣지 케이스(만료 토큰, 빈 목록, 검증 실패) 처리
-- [ ] 모든 실패 응답이 `ApiResponse` 포맷 유지
-- [ ] README로 신규 환경에서 재현 가능
-- [ ] PRD 1.3 표와 `docs/guides/`가 실제 스택과 일치
+- [x] 핵심 사용자 흐름 무결점 통과 (**Playwright 자동 시나리오 전부 그린**) — Task 032에서 3개 스펙 전부 통과 확인
+- [ ] **소셜 로그인 수동 체크리스트 전 항목 통과** — Task 033에서 Google 관련 6개 항목은 통과했으나 Kakao 2개 항목(자격증명 미준비)과 동의 거부 실패 경로 1개 항목이 보류 상태로 남아 있어 미완료
+- [x] 주요 엣지 케이스(만료 토큰, 빈 목록, 검증 실패) 처리 — Task 034에서 통과 확인
+- [x] 모든 실패 응답이 `ApiResponse` 포맷 유지 — Task 034에서 `curl` 실측으로 AUTH_003/004/005 전부 확인
+- [x] README로 신규 환경에서 재현 가능
+- [x] PRD 1.3 표와 `docs/guides/`가 실제 스택과 일치
 
 **의존성**: M3~M7
+
+> ⚠️ **미완료 항목**: 소셜 로그인 수동 체크리스트의 Kakao 검증(자격증명 준비 필요)과 동의 거부 실패 경로 재검증(Google 계정 앱 액세스 해제 후 재시도 필요)이 남아 있다. 이 항목들은 외부 자격증명·수동 조작이 필요해 이번 세션(Task 035)에서 처리하지 못했다.
 
 ---
 
