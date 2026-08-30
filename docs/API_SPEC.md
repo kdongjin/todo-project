@@ -154,6 +154,17 @@
 
 > **소유권 위반은 403이 아닌 404로 응답한다.** 403은 "그 리소스는 존재하지만 네 것이 아니다"를 알려주므로, ID를 순회하며 타인 리소스의 존재 여부를 열거할 수 있게 된다. PRD 10장 보안 요구사항 참조.
 
+### 2.4 첨부(이미지 업로드)
+
+| 코드 | HTTP | 의미 |
+|------|------|------|
+| `FILE_001` | 404 | 첨부를 찾을 수 없음 **(타인 소유인 경우 포함)** |
+| `FILE_002` | 400 | 허용되지 않는 이미지 형식 (MIME 화이트리스트 또는 매직 바이트 불일치) |
+| `FILE_003` | 400 | 파일 크기가 5MB 제한을 초과 |
+| `FILE_004` | 500 | 파일 저장/삭제 실패 (디스크·S3 I/O 오류) |
+
+> 첨부 삭제도 2.3과 동일하게 **소유권 위반은 403이 아닌 404**(`FILE_001`)로 응답한다.
+
 ---
 
 ## 3. 인증 API
@@ -540,23 +551,86 @@ GET /api/todos?page=0&size=10&status=TODO&keyword=장보기
 
 ---
 
-## 5. HTTP 상태코드 정리
+## 5. 업로드 API
+
+Tiptap 본문에 삽입하는 이미지를 관리한다. 로컬(dev)은 디스크, 운영(prod)은 AWS S3에 저장하지만 API 계약은 동일하다. 모든 엔드포인트는 **인증 필요**이며, 서버가 `user_id`와 인증 주체의 일치를 검증한다.
+
+### 5.1 이미지 업로드 — `POST /api/uploads/image`
+
+> 기능 ID `TODO-07` · **인증 필요**
+
+**Request** — `multipart/form-data`
+
+| 필드 | 타입 | 필수 | 검증 |
+|------|------|------|------|
+| `file` | file | ✅ | MIME `image/jpeg`/`image/png`/`image/webp`/`image/gif` 화이트리스트 + 매직 바이트 검증, 최대 **5MB** |
+
+**Response** — `201 Created`
+
+```json
+{
+  "success": true,
+  "data": {
+    "attachmentId": 12,
+    "url": "https://.../todo-images/1/uuid.png",
+    "originalName": "screenshot.png",
+    "fileSize": 204800
+  },
+  "error": null
+}
+```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `attachmentId` | number | 첨부 ID (Todo 저장 시 본문에서 URL로 역참조되어 자동 연결됨) |
+| `url` | string | 본문(Tiptap `image` 노드 `src`)에 그대로 삽입하는 접근 URL |
+| `originalName` | string | 원본 파일명 |
+| `fileSize` | number | 바이트 크기 |
+
+> `attachmentId`는 응답 확인용일 뿐, Todo 생성/수정 API(4.3·4.5)에 별도로 전달하지 않는다. 서버가 본문(JSONB)의 `image` 노드 `src`를 파싱해 자동으로 `todo_id`를 채운다.
+
+**에러**: `FILE_002`(400 형식 불허), `FILE_003`(400 크기 초과), `AUTH_003`~`AUTH_005`(401)
+
+---
+
+### 5.2 첨부 삭제 — `DELETE /api/uploads/{attachmentId}`
+
+> 기능 ID `TODO-07` · **인증 필요** · **Soft Delete**
+
+에디터에서 이미지를 직접 제거했을 때 프론트가 호출한다(선택적 — Todo 저장 시에도 본문에서 사라진 이미지는 서버가 자동으로 Soft Delete 한다).
+
+**Response** — `200 OK`
+
+```json
+{
+  "success": true,
+  "data": null,
+  "message": "삭제되었습니다.",
+  "errorCode": null
+}
+```
+
+**에러**: `FILE_001`(404 — 없거나 타인 소유)
+
+---
+
+## 6. HTTP 상태코드 정리
 
 | 코드 | 사용 상황 |
 |------|-----------|
 | `200 OK` | 조회·수정·삭제·토글 성공 |
-| `201 Created` | 회원가입, Todo 생성 성공 |
+| `201 Created` | 회원가입, Todo 생성, 이미지 업로드 성공 |
 | `400 Bad Request` | 검증 실패, 잘못된 파라미터 |
 | `401 Unauthorized` | 미인증, 토큰 만료/위조, 로그인 자격 불일치 |
 | `404 Not Found` | 리소스 없음 **또는 타인 소유** |
 | `409 Conflict` | 이메일 중복 |
 | `500 Internal Server Error` | 서버 오류 |
 
-> **403 Forbidden은 사용하지 않는다.** 소유권 위반은 404로 처리한다 (2.3 참조).
+> **403 Forbidden은 사용하지 않는다.** 소유권 위반은 404로 처리한다 (2.3·2.4 참조).
 
 ---
 
-## 6. 프론트엔드 연동 규칙
+## 7. 프론트엔드 연동 규칙
 
 - 모든 API 호출은 **`lib/api/client.ts`를 경유**한다. 컴포넌트에서 `fetch`를 직접 호출하지 않는다.
 - **토큰은 `localStorage`에 저장한다** (PRD 13.1 확정). 클라이언트가 JWT를 `Authorization` 헤더에 **자동 첨부**한다.
@@ -566,5 +640,6 @@ GET /api/todos?page=0&size=10&status=TODO&keyword=장보기
 - **목록 조회의 `page`·`status`·`keyword`는 URL 쿼리스트링을 단일 출처로 삼는다** (PRD 6.4). React Query의 쿼리 키도 이 값들로 구성해 URL과 캐시를 일치시킨다.
   - `useSearchParams()`를 쓰므로 해당 영역은 **`<Suspense>` 래핑이 필수**다 (Next.js 16).
 - 검증 실패(`COMMON_001`) 응답의 `data` 맵을 React Hook Form의 필드 에러로 매핑한다.
+- 이미지 업로드(5.1)는 `FormData`로 전송하므로 `Content-Type`을 직접 지정하지 않는다(브라우저가 boundary를 포함해 자동 설정). `apiFetch`는 `body`가 `FormData`인지로 이를 분기한다.
 
 > ⚠️ **인증·CRUD 로직을 Next.js Server Actions에서 직접 구현하지 않는다.** 비밀번호 해싱·사용자 생성·토큰 발급은 전부 Spring Boot 백엔드의 책임이다.

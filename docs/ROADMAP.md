@@ -464,7 +464,7 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 
 ## M4. Todo API 📝
 
-**목표**: Todo CRUD와 페이지네이션·Soft Delete·소유권 검증을 완성한다.
+**목표**: Todo CRUD와 페이지네이션·Soft Delete·소유권 검증을 완성한다. (확장: Task 040에서 이미지 첨부 업로드 API를 추가한다.)
 
 ### Task 016: Todo 생성·상세·수정 API 구현
 
@@ -531,6 +531,31 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 - [x] **삭제된 Todo를 ID로 직접 조회해도 404** (Soft Delete 누수 없음)
 - [x] 삭제된 Todo를 다시 삭제 → 404
 
+### Task 040: 이미지 첨부 업로드 API (S3 연동, M4 확장) ✅ 완료
+
+**영역**: BE | **선행**: Task 016, Task 018
+
+> docs/appendFileImage.md 참조. Tiptap 본문에 삽입하는 이미지를 관리하는 `attachments` 테이블(PRD 8.2)과 업로드/삭제 API를 추가한다.
+
+- [x] `domain/attachment/Attachment.java` — `BaseEntity` 상속, `@SQLDelete`+`@SQLRestriction`, `@ManyToOne(fetch=LAZY)` 명시 (불변 규칙 14), 인덱스 `(todo_id, deleted_at)`/`(user_id, deleted_at)`
+- [x] `domain/attachment/storage/{FileStorageService, LocalFileStorageService, S3FileStorageService}` — `app.upload.storage-type` 프로퍼티 기반 `@ConditionalOnProperty` 전환 (⚠️ `@Profile`로 나누면 `src/test/resources/application.properties`가 프로파일을 지정하지 않아 테스트가 전부 컨텍스트 로드에 실패한다)
+- [x] `domain/attachment/ImageFileValidator` — MIME 화이트리스트 + **매직 바이트 검증**(`ImageIO.read`, WebP는 `RIFF...WEBP` 시그니처 직접 확인). `MultipartFile#getContentType()`만으로는 클라이언트가 위조 가능
+- [x] `POST /api/uploads/image`, `DELETE /api/uploads/{attachmentId}` — `upload/UploadController.java`
+- [x] **소유권 위반은 403이 아닌 404 + `FILE_001`** (불변 규칙 11)
+- [x] `ErrorCode`에 `FILE_001~004` 추가, `GlobalExceptionHandler`에 `MaxUploadSizeExceededException` → `FILE_003` 핸들러 추가
+- [x] `SecurityConfig`에 `/uploads/**` permitAll 추가 (dev: `<img src>`는 `Authorization` 헤더를 못 붙이므로 인증 필수로 두면 이미지가 전부 401이 된다) — UUID 난수 파일명이 unguessable URL 역할
+- [x] `common/config/WebMvcConfig.java` 신규(프로젝트 최초 `WebMvcConfigurer` 구현체) — `/uploads/**` → `file:${app.upload.local-path}/` 정적 리소스 매핑 (LOCAL일 때만)
+- [x] `TodoService.create/update`에 본문(JSONB) 파싱 후처리 추가 — `image` 노드 `src` URL로 사용자 소유 첨부를 찾아 `todo_id`를 연결하고, 본문에서 사라진 이미지는 같은 시점에 Soft Delete
+- [x] `pom.xml` — AWS SDK v2 BOM + `s3` 의존성. 자격증명은 **`DefaultCredentialsProvider`만** 사용(운영은 EC2 IAM Role, 로컬 S3 테스트만 액세스 키)
+
+**테스트 체크리스트 (Spring Boot Test + MockMvc)**
+- [x] 허용되지 않은 MIME(선언 위조 포함) → 400 + `FILE_002`
+- [x] 5MB 초과 → 400 + `FILE_003`
+- [x] 미인증 요청 → 401 + `AUTH_003`
+- [x] **타인 첨부 삭제 시도 → 404 + `FILE_001`** (403 아님)
+- [x] 삭제가 Soft Delete로 처리되고 재조회·재삭제 시 404
+- [x] Todo 생성/수정 시 본문에 포함된 이미지의 `todo_id`가 채워짐, 본문에서 제거된 이미지는 Soft Delete됨
+
 **DoD**
 - [x] CRUD·상태 변경 정상 동작
 - [x] **같은 상태 변경 요청을 두 번 보내도 결과가 동일함(멱등성)**
@@ -539,6 +564,7 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
 - [x] 타인 Todo 접근 시 차단 — **404 Not Found** 반환 (403은 리소스 존재 여부를 노출하므로 사용하지 않음)
 - [x] **삭제된 Todo를 ID로 직접 조회해도 404** (Soft Delete 누수 없음)
 - [ ] API_SPEC 4.1~4.7의 요청/응답 바디와 실제 응답이 일치함
+- [x] (Task 040) 이미지 업로드/삭제 API 동작, 신규 테스트 9건 포함 `./mvnw test` 전체 80건 통과(회귀 없음), API_SPEC 5.1~5.2와 일치
 
 **의존성**: M2 · (M3와 병렬 가능)
 
@@ -588,7 +614,7 @@ M1 이후 모든 DoD가 "테스트로 확인"을 요구하는데, **테스트 DB
   - `sessionStorage`는 탭을 닫으면 사라져 **24h 토큰의 의미가 없어진다**. XSS 노출도는 둘이 동일하므로 사용성이 나은 쪽을 택했다
   - ⚠️ **SSR 안전성**: `localStorage`는 서버에 없다. 접근하는 코드는 클라이언트 컴포넌트이거나 `typeof window !== 'undefined'` 가드를 둔다
 - [ ] `lib/api/client.ts` — fetch 래퍼. **JWT 자동 첨부**, `NEXT_PUBLIC_API_BASE_URL` 사용
-  - **401 응답 시 토큰 삭제 후 로그인 페이지로 리다이렉트** (API_SPEC 6장)
+  - **401 응답 시 토큰 삭제 후 로그인 페이지로 리다이렉트** (API_SPEC 7장)
   - ⚠️ **리다이렉트 루프 방지** — 로그인/회원가입 페이지에서 받은 401은 리다이렉트하지 않는다
 - [ ] `lib/api/auth.ts`, `lib/api/todo.ts` — API_SPEC의 엔드포인트별 함수
   - 목록 조회 함수는 `{ page, status, keyword }`를 인자로 받는다 — **URL 쿼리가 단일 출처**이므로 훅이 URL에서 읽어 그대로 전달한다 (PRD 6.4)
@@ -736,7 +762,7 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 
 ## M7. Todo 화면 ✅
 
-**목표**: Tiptap 기반 작성/편집과 목록(페이지네이션·필터) UI를 완성한다.
+**목표**: Tiptap 기반 작성/편집과 목록(페이지네이션·필터) UI를 완성한다. (확장: Task 041에서 Tiptap 이미지 첨부 UI를 추가한다.)
 
 ### Task 028: Tiptap 설치 및 에디터 래퍼 구현
 
@@ -807,6 +833,34 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 - [ ] 삭제 → 목록에서 사라지고 **새로고침 후에도 사라진 상태 유지**
 - [ ] 삭제된 항목이 `totalElements` 감소에 반영됨
 
+### Task 041: Tiptap 이미지 첨부 UI (S3 연동, M7 확장) ✅ 완료
+
+**영역**: FE | **선행**: Task 028, Task 040
+
+> docs/appendFileImage.md 참조. `TiptapEditor`에 이미지 삽입(선택/붙여넣기/드래그앤드롭)을 추가한다.
+
+- [x] `npm i @tiptap/extension-image@3.30.2` — **코어(`@tiptap/react`/`@tiptap/starter-kit`)와 동일한 버전으로 고정** (`latest` 설치 금지 — Tiptap은 코어/확장 버전 불일치에 민감)
+- [x] `lib/api/client.ts` — `apiFetch`가 `body`로 `FormData`를 받으면 `Content-Type`을 직접 지정하지 않도록 분기 (기존에는 항상 `application/json`을 강제해 업로드 시 boundary가 깨졌다)
+- [x] `lib/api/upload.ts`, `types/attachment.ts` 신규 — `uploadImage(file)`, `deleteAttachment(id)` (`any` 금지)
+- [x] `components/editor/TiptapEditor.tsx` — `@tiptap/extension-image` 추가, 툴바에 이미지 버튼(숨김 `<input type="file">`) + `editorProps.handlePaste`/`handleDrop`으로 붙여넣기·드래그앤드롭 지원
+  - [x] 업로드 중 로딩 인디케이터(`Loader2` 스피너), 실패 시 기존 관례인 인라인 `role="alert"` 메시지 (토스트 라이브러리 미설치이므로 신규 도입하지 않음)
+  - [x] 업로드 실패해도 에디터 상태가 깨지지 않음
+  - [x] 클라이언트 사이드 선검증(MIME 화이트리스트·5MB)으로 불필요한 요청 차단
+
+**테스트 체크리스트 (Playwright)**
+- [x] 파일 선택 업로드 → 본문에 이미지 표시
+- [x] 드래그앤드롭 업로드 → 본문에 이미지 표시
+- [x] 붙여넣기 업로드 → 본문에 이미지 표시
+- [x] 업로드 실패 시 에러 메시지 노출, 에디터는 계속 입력 가능
+- [x] 5MB 초과 파일은 요청 없이 클라이언트에서 즉시 거부
+
+**DoD**
+- [x] E2E 5건 포함 모킹 기반 Playwright 스위트 통과, `npm run lint` + `npm run build` 통과
+
+**의존성**: Task 028(Tiptap 에디터), Task 040(백엔드 업로드 API)
+
+---
+
 **DoD**
 - [ ] 목록 페이지네이션·필터 동작 (`Pagination` 재사용 컴포넌트 사용)
 - [ ] Tiptap으로 본문 작성/수정 및 저장/불러오기 — **서식이 손실 없이 왕복**
@@ -815,6 +869,7 @@ PRD 6.7의 공통 헤더. 세 기능이 여기서만 구현되므로 별도 Task
 - [ ] **PRD 1.3의 Tiptap 설치 상태 표 갱신 완료**
 - [ ] Playwright Todo 시나리오 전부 통과
 - [ ] `npm run lint` + `npm run build` 통과
+- [x] (Task 041) 이미지 첨부 업로드/붙여넣기/드래그앤드롭 동작, 신규 Playwright 5건 통과
 
 **의존성**: M4, M5
 
@@ -1005,6 +1060,7 @@ PRD 4장의 모든 기능 ID가 어느 마일스톤에서 구현되는지 정리
 | `TODO-04` | 수정 | M4 (Task 016) | M7 (Task 030) |
 | `TODO-05` | 상태 변경 (멱등) | M4 (Task 018) | M7 (Task 031) |
 | `TODO-06` | 삭제 (Soft Delete) | M4 (Task 018) | M7 (Task 031) |
+| `TODO-07` | 이미지 첨부 (S3 연동) | M4 (Task 040) | M7 (Task 041) |
 | `UI-01` | 다크모드 토글 | — | M5(Task 020 프로바이더) + **M6(Task 027 헤더 배치)** |
 | `UI-02` | 페이지네이션 컴포넌트 | — | M5 (Task 022) |
 
@@ -1067,7 +1123,7 @@ PRD 4장의 모든 기능 ID가 어느 마일스톤에서 구현되는지 정리
 | PRD 8.3 | **연관관계 `LAZY` 명시 필수** 소절 신설 |
 | PRD 10장 | **CORS 세부 조건 표** (`PATCH` 포함, `allowCredentials=false`) |
 | PRD 13.1 | 확정 사항 6행 추가 — 토큰 `localStorage` · 목록 URL 쿼리 · 테스트 DB · `LAZY` · S3 제외 |
-| API_SPEC 6장 | 토큰 저장 매체·URL 쿼리 단일 출처·401 루프 방지 |
+| API_SPEC 7장 (구 6장, TODO-07 반영 시 5장 신설로 이동) | 토큰 저장 매체·URL 쿼리 단일 출처·401 루프 방지 |
 | `docs/guides/` 3종 | 이미 갱신 완료 (16.3.1 · `radix-nova`) |
 | `src/test/resources/application.properties` | 테스트 스키마 분리 적용 |
 

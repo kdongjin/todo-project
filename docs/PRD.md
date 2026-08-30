@@ -284,6 +284,7 @@ todo-frontend/
 | **TODO-04** | 수정 | 제목/본문/마감일/상태 수정 | Todo 상세/편집 페이지 | ✅ |
 | **TODO-05** | 상태 변경 | 목표 상태(`TODO`/`DONE`)를 **바디로 지정**해 변경. UI는 토글로 동작하되 요청은 **멱등** | Todo 목록 페이지, Todo 상세/편집 페이지 | ✅ |
 | **TODO-06** | 삭제 | **Soft Delete** (물리 삭제 아님) | Todo 목록 페이지, Todo 상세/편집 페이지 | ✅ |
+| **TODO-07** | 이미지 첨부 | Tiptap 본문에 이미지 삽입(선택/붙여넣기/드래그앤드롭). 로컬은 디스크, 운영은 **S3** 저장 | Todo 작성 페이지, Todo 상세/편집 페이지 | ✅ |
 
 ### 4.3 공통 UI
 
@@ -305,8 +306,10 @@ todo-frontend/
 
 - 프로필 상세 관리, 언어 설정
 - 실시간 알림, 소셜 기능(공유/협업)
-- 태그·카테고리, 첨부파일, 본문 전문 검색
-- **S3 등 오브젝트 스토리지** (첨부파일 도입 시 함께 검토)
+- 태그·카테고리, 본문 전문 검색
+- 이미지 리사이즈/썸네일/최적화, 고아 첨부 정리 배치 (TODO-07은 원본 저장·즉시 반영까지만 지원)
+
+> `content` 전문 검색과 태그·카테고리는 여전히 MVP 범위 밖이다. **이미지 첨부(TODO-07)는 M4·M7 확장으로 구현되었다** — 8.2의 `attachments` 테이블 참조.
 - Refresh Token (명시 요청 전까지 도입하지 않음)
 - 프론트엔드 단위 테스트(Jest/Vitest/Testing Library) — MVP는 **Playwright E2E 하나로 통일**한다
 
@@ -574,6 +577,30 @@ M0의 DB 연결 확인 단계에서 `\dn` 으로 **실제 생성된 스키마 �
 
 > **`keyword` 검색은 위 인덱스로 커버되지 않는다.** 대소문자 무시 부분 일치(`LOWER(title) LIKE '%kw%'`)는 선행 와일드카드 때문에 B-tree 인덱스를 탈 수 없다.
 > MVP에서는 `user_id` 선필터로 후보를 좁힌 뒤 스캔하는 것으로 충분하다. 사용자당 데이터가 크게 늘면 `pg_trgm` 확장 + GIN 인덱스 도입을 검토한다 (**MVP 범위 외**).
+
+#### `attachments`
+
+Todo 본문(Tiptap JSONB)에 삽입된 이미지의 메타데이터를 관리한다. 본문에는 URL만 저장되고, 실제 파일 메타데이터는 이 테이블에서 별도 관리한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|------|------|------|------|
+| id | BIGINT | PK, AUTO | 첨부 ID |
+| todo_id | BIGINT | FK → todos.id, NULL 허용 | 소속 Todo (작성 중에는 NULL) |
+| user_id | BIGINT | FK → users.id, NOT NULL | 업로더 (소유권 검증용) |
+| original_name | VARCHAR(255) | NOT NULL | 원본 파일명 |
+| storage_key | VARCHAR(500) | NOT NULL | 저장 키 (S3 object key 또는 로컬 경로) |
+| url | VARCHAR(1000) | NOT NULL | 접근 URL |
+| content_type | VARCHAR(100) | NOT NULL | MIME 타입 |
+| file_size | BIGINT | NOT NULL | 바이트 크기 |
+| storage_type | VARCHAR(20) | NOT NULL | `LOCAL` / `S3` |
+| created_at | TIMESTAMP | NOT NULL | 생성일 |
+| updated_at | TIMESTAMP | NOT NULL | 수정일 |
+| deleted_at | TIMESTAMP | NULL | Soft Delete 시각 |
+
+**인덱스**: `(todo_id, deleted_at)`, `(user_id, deleted_at)`
+
+> `todos` 테이블은 변경하지 않는다. `todo_id`는 Todo 생성/수정 시 본문(JSONB)에서 `image` 노드의 `src` URL을 파싱해 서버가 자동으로 채운다(클라이언트가 별도로 지정하지 않는다). 본문에서 사라진 이미지는 같은 시점에 Soft Delete된다.
+> Todo가 Soft Delete되어도 첨부는 곧바로 물리 삭제하지 않는다 (고아 파일 정리 배치는 4.5 참조, MVP 범위 외).
 
 ### 8.3 Soft Delete 구현 방침
 
