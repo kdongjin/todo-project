@@ -20,11 +20,13 @@
     },
     "shrimp-task-manager": {
       "command": "node",
-      "args": ["D:\\claude\\mcp-shrimp-task-manager\\dist\\index.js"],
+      "args": [
+        "C:\\Users\\user\\claude\\mcp-shrimp-task-manager\\dist\\index.js"
+      ],
       "env": {
-        "DATA_DIR": "D:\\claude\\todo-project\\shrimp_data",
+        "DATA_DIR": "f:\\claude\\todo-project\\shrimp_data",
         "TEMPLATES_USE": "ko",
-        "ENABLE_GUI": "false"
+        "ENABLE_GUI": "true"
       }
     }
   }
